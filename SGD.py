@@ -1,7 +1,5 @@
 # Credits: https://nextjournal.com/gkoehler/pytorch-mnist
-# No batch normalisation because only introduce in 2015
-# ADD: Preprocess pixels by dividing values by 126.
-# How to initialize weights??
+# Which layers to drop?
 
 import csv
 import sys
@@ -18,9 +16,10 @@ if len(sys.argv) < 4:
 LEARNING_RATES = [1e-3, 1e-4, 1e-5]
 LEARNING_RATE = LEARNING_RATES[int(sys.argv[1]) - 1]
 HIDDEN_UNITS = 400 * int(sys.argv[2])  # tested in paper: 400, 800, 1200
-ENABLE_DROPOUT = True
+ENABLE_DROPOUT = False
 EPOCHS = int(sys.argv[3])
 BATCH_SIZE = 128
+USE_CUDA = torch.cuda.is_available()
 
 torch.manual_seed(1)
 
@@ -28,7 +27,6 @@ print("----- FCN on MNIST -----")
 print("Learning Rate: ", LEARNING_RATE)
 print("Hidden Units : ", HIDDEN_UNITS)
 print("Dropout      : ", ENABLE_DROPOUT)
-USE_CUDA = torch.cuda.is_available()
 print("CUDA         : ", USE_CUDA, '\n')
 DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
 
@@ -45,7 +43,8 @@ class DropoutNetwork(nn.Module):
 
     def forward(self, x):
         x = x.view(-1, 28 * 28)
-
+        if ENABLE_DROPOUT:
+            x = F.dropout(x, p=0.2, training=self.training)
         h1 = F.relu(self.fc0(x))
         if ENABLE_DROPOUT:
             h1 = F.dropout(h1, p=0.5, training=self.training)
@@ -71,7 +70,6 @@ loss_function = F.cross_entropy
 train_losses = []
 valid_losses = []
 test_losses = []
-
 valid_correct = []
 test_correct = []
 
@@ -118,8 +116,8 @@ def test(epoch, data_loader, validation):
 
             loss += loss_function(output, label, reduction='sum').item()
 
-            _, pred = torch.max(output.data, 1)
-            correct += pred.eq(label.data).sum()
+            predict = output.data.max(1)[1]
+            correct += predict.eq(label.data).cpu().sum()
 
     loss /= len(data_loader.dataset)
 
@@ -127,9 +125,8 @@ def test(epoch, data_loader, validation):
         valid_losses.append(loss)
         valid_correct.append(correct)
 
-        print('[Epoch {}] Loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
-            epoch, loss, correct, len(data_loader.dataset),
-            100. - (100. * correct / len(data_loader.dataset))))
+        print('[Epoch {}] Loss: {:.4f}, Correct: {}'.format(
+            epoch, loss, correct))
     else:
         test_losses.append(loss)
         test_correct.append(correct)
