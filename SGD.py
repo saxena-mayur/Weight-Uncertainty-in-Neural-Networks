@@ -1,150 +1,191 @@
-# Credits: https://nextjournal.com/gkoehler/pytorch-mnist
-# Which layers to drop?
+# Credit: Kyuhong Shim(skhu20@snu.ac.kr) - https://github.com/khshim/pytorch_mnist
 
-import csv
 import sys
+import csv
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from LoadMNIST import load_mnist
+from torch.utils.data.dataloader import DataLoader
+from torch.autograd import Variable
 
-if len(sys.argv) < 4:
-    print('Call: python SGD.py [RATE 1-3] [UNITS 1-3] [EPOCHS]')
-    sys.exit()
-
-LEARNING_RATES = [1e-3, 1e-4, 1e-5]
-LEARNING_RATE = LEARNING_RATES[int(sys.argv[1]) - 1]
-HIDDEN_UNITS = 400 * int(sys.argv[2])  # tested in paper: 400, 800, 1200
-ENABLE_DROPOUT = False
-EPOCHS = int(sys.argv[3])
-BATCH_SIZE = 128
-USE_CUDA = torch.cuda.is_available()
-
-torch.manual_seed(1)
-
-print("----- FCN on MNIST -----")
-print("Learning Rate: ", LEARNING_RATE)
-print("Hidden Units : ", HIDDEN_UNITS)
-print("Dropout      : ", ENABLE_DROPOUT)
-print("CUDA         : ", USE_CUDA, '\n')
-DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
-
-# Load MNIST
-train_loader, valid_loader, test_loader = load_mnist(BATCH_SIZE)
+from data.parser import parse_mnist
+from data.dataset import MNISTDataset
+from data.transforms import MNISTTransform
 
 
-class DropoutNetwork(nn.Module):
+class Config(object):
+
     def __init__(self):
-        super(DropoutNetwork, self).__init__()
-        self.fc0 = nn.Linear(28 * 28, HIDDEN_UNITS)
-        self.fc1 = nn.Linear(HIDDEN_UNITS, HIDDEN_UNITS)
-        self.fc2 = nn.Linear(HIDDEN_UNITS, 10)
 
-    def forward(self, x):
-        x = x.view(-1, 28 * 28)
-        if ENABLE_DROPOUT:
-            x = F.dropout(x, p=0.2, training=self.training)
-        h1 = F.relu(self.fc0(x))
-        if ENABLE_DROPOUT:
-            h1 = F.dropout(h1, p=0.5, training=self.training)
+        self.mode = 'dropout'  # 'dropout' or 'mlp'
+        self.parse_seed = 1
+        self.torch_seed = 1
+
+        self.mnist_path = 'data/'
+        self.num_valid = 10000
+        self.batch_size = 128
+        self.eval_batch_size = 1000
+        self.num_workers = 4
+
+
+class ModelMLPDropout(nn.Module):
+
+    def __init__(self, hidden_units):
+        super(ModelMLPDropout, self).__init__()
+        self.fc0 = nn.Linear(784, hidden_units)
+        self.fc1 = nn.Linear(hidden_units, hidden_units)
+        self.fc2 = nn.Linear(hidden_units, 10)
+
+        torch.nn.init.kaiming_uniform_(self.fc0.weight, nonlinearity='linear')
+        torch.nn.init.kaiming_uniform_(self.fc1.weight, nonlinearity='relu')
+        torch.nn.init.kaiming_uniform_(self.fc2.weight, nonlinearity='relu')
+
+    def forward(self, input_):
+        input_ = F.dropout(input_, p=0.2, training=self.training)
+        h1 = F.relu(self.fc0(input_))
+        h1 = F.dropout(h1, p=0.5, training=self.training)
         h2 = F.relu(self.fc1(h1))
-        if ENABLE_DROPOUT:
-            h2 = F.dropout(h2, p=0.5, training=self.training)
+        h2 = F.dropout(h2, p=0.5, training=self.training)
         h3 = self.fc2(h2)
-
         return h3
 
 
-model = DropoutNetwork()
-# if torch.cuda.device_count() > 1:
-#  print("Let's use", torch.cuda.device_count(), "GPUs!")
-# dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-# model = nn.DataParallel( model )
-model.to(DEVICE)
+class ModelMLP(nn.Module):
 
-optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE)
-loss_function = F.cross_entropy
+    def __init__(self, hidden_units):
+        super(ModelMLP, self).__init__()
+        self.fc0 = nn.Linear(784, hidden_units)
+        self.fc1 = nn.Linear(hidden_units, hidden_units)
+        self.fc2 = nn.Linear(hidden_units, 10)
 
-# Keep track of progress
-train_losses = []
-valid_losses = []
-test_losses = []
-valid_correct = []
-test_correct = []
+        torch.nn.init.kaiming_uniform_(self.fc0.weight, nonlinearity='linear')
+        torch.nn.init.kaiming_uniform_(self.fc1.weight, nonlinearity='relu')
+        torch.nn.init.kaiming_uniform_(self.fc2.weight, nonlinearity='relu')
+
+    def forward(self, input_):
+        h1 = F.relu(self.fc0(input_))
+        h2 = F.relu(self.fc1(h1))
+        h3 = self.fc2(h2)
+        return h3
 
 
-def train(epoch):
+def train(model, optimizer, loader):
     model.train()
-    for batch_idx, (inputs, label) in enumerate(train_loader):
-        inputs, label = inputs.to(DEVICE), label.to(DEVICE)
-
-        # Forward pass
+    loss_sum = 0
+    acc_sum = 0
+    for idx, (data, target) in enumerate(loader):
+        data, target = data.cuda(), target.cuda()
+        data, target = Variable(data), Variable(target)
         optimizer.zero_grad()
-        output = model(inputs)
-
-        # Loss function
-        loss = loss_function(output, label)
-
-        # Backward pass
+        output = model(data)
+        loss = F.cross_entropy(output, target)
+        loss_sum += loss.item()
         loss.backward()
-
-        # Update the weights
         optimizer.step()
 
-        # if batch_idx % 100 == 0:
-        #    print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #        epoch, batch_idx * len(inputs), len(train_loader.dataset),
-        #        100. * batch_idx / len(train_loader), loss.item()))
-
-    train_losses.append(loss.item())
+        predict = output.data.max(1)[1]
+        acc = predict.eq(target.data).cpu().sum().item()
+        acc_sum += acc
+    return loss_sum / len(loader), acc_sum / len(loader)
 
 
-def test(epoch, data_loader, validation):
+def evaluate(model, loader):
     model.eval()
+    loss_sum = 0
+    acc_sum = 0
+    for idx, (data, target) in enumerate(loader):
+        data, target = data.cuda(), target.cuda()
+        data, target = Variable(data), Variable(target)
+        output = model(data)
+        loss = F.cross_entropy(output, target)
+        loss_sum += loss.item()
 
-    loss = 0.  # avg. loss over whole data set
-    correct = 0.
+        predict = output.data.max(1)[1]
+        acc = predict.eq(target.data).cpu().sum().item()
+        acc_sum += acc
+    return loss_sum / len(loader), acc_sum / len(loader)
 
-    # Loop over WHOLE data set in batches
-    with torch.no_grad():
-        for inputs, label in data_loader:
-            inputs, label = inputs.to(DEVICE), label.to(DEVICE)
 
-            label = label.squeeze()
-            output = model(inputs)
+def main(cfg, lr, hidden_units, max_epoch):
+    torch.manual_seed(cfg.torch_seed)
 
-            loss += loss_function(output, label, reduction='sum').item()
-
-            predict = output.data.max(1)[1]
-            correct += predict.eq(label.data).cpu().sum()
-
-    loss /= len(data_loader.dataset)
-
-    if (validation):
-        valid_losses.append(loss)
-        valid_correct.append(correct)
-
-        print('[Epoch {}] Loss: {:.4f}, Correct: {}'.format(
-            epoch, loss, correct))
+    """Prepare data"""
+    if cfg.mode == 'mlp' or cfg.mode == 'dropout':
+        train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(
+            2, cfg.mnist_path, cfg.num_valid, cfg.parse_seed)
+    # elif cfg.mode == 'cnn':
+    #     train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(4, cfg.mnist_path, cfg.num_valid, cfg.parse_seed)
     else:
-        test_losses.append(loss)
-        test_correct.append(correct)
+        raise ValueError('Not supported mode')
+
+    transform = MNISTTransform()
+    train_dataset = MNISTDataset(train_data, train_label, transform=transform)
+    valid_dataset = MNISTDataset(valid_data, valid_label, transform=transform)
+    test_dataset = MNISTDataset(test_data, test_label, transform=transform)
+    train_iter = DataLoader(train_dataset, cfg.batch_size,
+                            shuffle=True, num_workers=cfg.num_workers)
+    valid_iter = DataLoader(
+        valid_dataset, cfg.eval_batch_size, shuffle=False, num_workers=cfg.num_workers)
+    test_iter = DataLoader(test_dataset, cfg.eval_batch_size, shuffle=False)
+
+    """Set model"""
+    if cfg.mode == 'mlp':
+        model = ModelMLP(hidden_units)
+    elif cfg.mode == 'dropout':
+        model = ModelMLPDropout(hidden_units)
+    else:
+        raise ValueError('Not supported mode')
+
+    model.cuda()
+    optimizer = optim.SGD(model.parameters(), lr=lr)
+
+    train_losses = np.zeros(max_epoch)
+    valid_losses = np.zeros(max_epoch)
+    test_losses = np.zeros(max_epoch)
+    valid_accs = np.zeros(max_epoch)
+    test_accs = np.zeros(max_epoch)
+
+    """Train"""
+    for epoch in range(max_epoch):
+        train_loss, train_acc = train(model, optimizer, train_iter)
+        valid_loss, valid_acc = evaluate(model, valid_iter)
+        test_loss, test_acc = evaluate(model, test_iter)
+
+        print("{0:>5}: Error {1:.2f}%".format(
+            epoch + 1, 100 * (1 - valid_acc / cfg.eval_batch_size)))
+
+        train_losses[epoch] = train_loss
+        valid_losses[epoch] = valid_loss
+        test_losses[epoch] = test_loss
+        valid_accs[epoch] = valid_acc
+        test_accs[epoch] = test_acc
+
+    suffix = str(lr) + '_' + str(hidden_units)
+
+    """Save"""
+    wr = csv.writer(open('results/results_' + suffix + '.csv', 'w'),
+                    delimiter=',', lineterminator='\n')
+    wr.writerow(['epoch', 'train_losses', 'valid_losses',
+                 'valid_correct', 'test_losses', 'test_correct'])
+    for i in range(max_epoch):
+        wr.writerow((i + 1, train_losses[i], valid_losses[i],
+                     int(valid_accs[i]), test_losses[i], int(test_accs[i])))
+
+    torch.save(model.state_dict(), 'results/model_' + suffix + '.pth')
 
 
-for epoch in range(EPOCHS):
-    train(epoch + 1)
-    test(epoch + 1, valid_loader, True)
-    test(epoch + 1, test_loader, False)
+if __name__ == '__main__':
+    """ARGS"""
+    if len(sys.argv) < 4:
+        print('Call: python SGD.py [RATE 1-3] [UNITS 1-3] [EPOCHS]')
+        sys.exit()
+    lrs = [1e-3, 1e-4, 1e-5, 1e-2]
+    lr = lrs[int(sys.argv[1]) - 1]
+    hidden_units = 400 * int(sys.argv[2])  # tested in paper: 400, 800, 1200
+    enable_dropout = True
+    max_epoch = int(sys.argv[3])
 
-suffix = str(LEARNING_RATE) + '_' + str(HIDDEN_UNITS)
-torch.save(model.state_dict(), 'results/model_' + suffix + '.pth')
-
-
-wr = csv.writer(open('results/results_' + suffix + '.csv', 'w'),
-                delimiter=',', lineterminator='\n')
-wr.writerow(['epoch', 'train_losses', 'valid_losses',
-             'valid_correct', 'test_losses', 'test_correct'])
-for i in range(EPOCHS):
-    wr.writerow((i + 1, train_losses[i], valid_losses[i], int(
-        valid_correct[i]), test_losses[i], int(test_correct[i])))
+    config = Config()
+    main(config, lr, hidden_units, max_epoch)
