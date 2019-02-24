@@ -3,30 +3,34 @@
 # ADD: Preprocess pixels by dividing values by 126.
 # How to initialize weights??
 
+import csv
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from LoadMNIST import load_mnist
 
-#import matplotlib.pyplot as plt
+if len(sys.argv) < 4:
+    print('Call: python SGD.py [RATE 1-3] [UNITS 1-3] [EPOCHS]')
+    sys.exit()
 
+LEARNING_RATES = [1e-3, 1e-4, 1e-5]
+LEARNING_RATE = LEARNING_RATES[int(sys.argv[1]) - 1]
+HIDDEN_UNITS = 400 * int(sys.argv[2])  # tested in paper: 400, 800, 1200
 ENABLE_DROPOUT = True
-EPOCHS = 50
+EPOCHS = int(sys.argv[3])
 BATCH_SIZE = 128
-
-LEARNING_RATE = 10e-3
-# LEARNING_RATE = 10e-4
-# LEARNING_RATE = 10e-5
-
-# HIDDEN_UNITS  = 1200
-# HIDDEN_UNITS   = 800
-HIDDEN_UNITS = 400
 
 torch.manual_seed(1)
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Cuda available?: ", torch.cuda.is_available())
+print("----- FCN on MNIST -----")
+print("Learning Rate: ", LEARNING_RATE)
+print("Hidden Units : ", HIDDEN_UNITS)
+print("Dropout      : ", ENABLE_DROPOUT)
+USE_CUDA = torch.cuda.is_available()
+print("CUDA         : ", USE_CUDA, '\n')
+DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
 
 # Load MNIST
 train_loader, valid_loader, test_loader = load_mnist(BATCH_SIZE)
@@ -57,7 +61,7 @@ model = DropoutNetwork()
 # if torch.cuda.device_count() > 1:
 #  print("Let's use", torch.cuda.device_count(), "GPUs!")
 # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-#  model = nn.DataParallel( model )
+# model = nn.DataParallel( model )
 model.to(DEVICE)
 
 optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE)
@@ -65,9 +69,11 @@ loss_function = F.cross_entropy
 
 # Keep track of progress
 train_losses = []
-test_losses = []
 valid_losses = []
-scale = [i + 1 for i in range(EPOCHS)]
+test_losses = []
+
+valid_correct = []
+test_correct = []
 
 
 def train(epoch):
@@ -96,7 +102,7 @@ def train(epoch):
     train_losses.append(loss.item())
 
 
-def test(data_loader, validation):
+def test(epoch, data_loader, validation):
     model.eval()
 
     loss = 0.  # avg. loss over whole data set
@@ -119,19 +125,29 @@ def test(data_loader, validation):
 
     if (validation):
         valid_losses.append(loss)
+        valid_correct.append(correct)
 
-        print('--> Ø Loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
-            loss, correct, len(data_loader.dataset),
+        print('[Epoch {}] Loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
+            epoch, loss, correct, len(data_loader.dataset),
             100. - (100. * correct / len(data_loader.dataset))))
     else:
         test_losses.append(loss)
+        test_correct.append(correct)
 
 
 for epoch in range(EPOCHS):
-    print('Training of Epoch {}'.format(epoch + 1))
     train(epoch + 1)
+    test(epoch + 1, valid_loader, True)
+    test(epoch + 1, test_loader, False)
 
-    test(valid_loader, True)
-    test(test_loader, False)
+suffix = str(LEARNING_RATE) + '_' + str(HIDDEN_UNITS)
+torch.save(model.state_dict(), 'results/model_' + suffix + '.pth')
 
-torch.save(model.state_dict(), 'model.pth')
+
+wr = csv.writer(open('results/results_' + suffix + '.csv', 'w'),
+                delimiter=',', lineterminator='\n')
+wr.writerow(['epoch', 'train_losses', 'valid_losses',
+             'valid_correct', 'test_losses', 'test_correct'])
+for i in range(EPOCHS):
+    wr.writerow((i + 1, train_losses[i], valid_losses[i], int(
+        valid_correct[i]), test_losses[i], int(test_correct[i])))
