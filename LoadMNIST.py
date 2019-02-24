@@ -8,20 +8,19 @@ import numpy as np
 
 
 class GenHelper(Dataset):
-    def __init__(self, mother, length, mapping):
-        # here is a mapping from this index to the mother ds index
-        self.mapping = mapping
+    def __init__(self, data, length, offset):
+        self.offset = offset
         self.length = length
-        self.mother = mother
+        self.data = data
 
     def __getitem__(self, index):
-        return self.mother[self.mapping[index]]
+        return self.data[index+offset]
 
     def __len__(self):
         return self.length
 
 
-def train_valid_split(ds, split_fold=10):
+def train_valid_split(ds, split_fold):
     '''
     This is a pytorch generic function that takes a data.Dataset object and splits it to validation and training
     efficiently.
@@ -31,11 +30,8 @@ def train_valid_split(ds, split_fold=10):
     dslen = len(ds)
     indices = list(range(dslen))
     valid_size = dslen//split_fold
-    np.random.shuffle(indices)
-    train_mapping = indices[valid_size:]
-    valid_mapping = indices[:valid_size]
-    train = GenHelper(ds, dslen - valid_size, train_mapping)
-    valid = GenHelper(ds, valid_size, valid_mapping)
+    train = GenHelper(ds, dslen - valid_size, 0)
+    valid = GenHelper(ds, valid_size, dslen - valid_size)
 
     return train, valid
 
@@ -62,12 +58,12 @@ def load_mnist(batch_size):
 
     valid_loader = torch.utils.data.DataLoader(
         dataset=valid_set,
-        batch_size=batch_size,
-        shuffle=True)  # 10000 images
+        batch_size=1000,
+        shuffle=False)  # 10000 images
 
     test_loader = torch.utils.data.DataLoader(
         dataset=test_set,
-        batch_size=batch_size,
+        batch_size=1000,
         shuffle=False)  # 10000 images
 
     # examples = enumerate(test_loader)
