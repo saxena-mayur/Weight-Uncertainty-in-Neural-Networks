@@ -38,7 +38,7 @@ class ModelMLPDropout(nn.Module):
         self.fc1 = nn.Linear(hidden_units, hidden_units)
         self.fc2 = nn.Linear(hidden_units, 10)
 
-        torch.nn.init.kaiming_uniform_(self.fc0.weight, nonlinearity='linear')
+        torch.nn.init.kaiming_uniform_(self.fc0.weight, nonlinearity='relu')
         torch.nn.init.kaiming_uniform_(self.fc1.weight, nonlinearity='relu')
         torch.nn.init.kaiming_uniform_(self.fc2.weight, nonlinearity='relu')
 
@@ -60,7 +60,7 @@ class ModelMLP(nn.Module):
         self.fc1 = nn.Linear(hidden_units, hidden_units)
         self.fc2 = nn.Linear(hidden_units, 10)
 
-        torch.nn.init.kaiming_uniform_(self.fc0.weight, nonlinearity='linear')
+        torch.nn.init.kaiming_uniform_(self.fc0.weight, nonlinearity='relu')
         torch.nn.init.kaiming_uniform_(self.fc1.weight, nonlinearity='relu')
         torch.nn.init.kaiming_uniform_(self.fc2.weight, nonlinearity='relu')
 
