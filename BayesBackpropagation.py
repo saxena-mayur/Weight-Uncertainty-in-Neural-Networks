@@ -57,7 +57,7 @@ class ScaleMixtureGaussian(object):
         return (torch.log(self.pi * prob1 + (1-self.pi) * prob2)).sum()
 
 class BayesianLinear(nn.Module):
-    def __init__(self, in_features, out_features):
+    def __init__(self, in_features, out_features, hasScalarMixturePrior):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -70,8 +70,14 @@ class BayesianLinear(nn.Module):
         self.bias_rho = nn.Parameter(torch.Tensor(out_features).uniform_(-5,-4))
         self.bias = Gaussian(self.bias_mu, self.bias_rho)
         # Prior distributions
-        self.weight_prior = ScaleMixtureGaussian(PI, SIGMA_1, SIGMA_2)
-        self.bias_prior = ScaleMixtureGaussian(PI, SIGMA_1, SIGMA_2)
+        self.weight_prior = 0
+        self.bias_prior = 0
+        if hasScalarMixturePrior == True:
+            self.weight_prior = ScaleMixtureGaussian(PI, SIGMA_1, SIGMA_2)
+            self.bias_prior = ScaleMixtureGaussian(PI, SIGMA_1, SIGMA_2)
+        else:
+            self.weight_prior = Gaussian(0, SIGMA_1)
+            self.bias_prior = Gaussian(0, SIGMA_1)
         self.log_prior = 0
         self.log_variational_posterior = 0
 
@@ -91,7 +97,7 @@ class BayesianLinear(nn.Module):
         return F.linear(input, weight, bias)
 
 class BayesianNetwork(nn.Module):
-    def __init__(self, inputSize, CLASSES, layers, activations, SAMPLES, BATCH_SIZE, NUM_BATCHES):
+    def __init__(self, inputSize, CLASSES, layers, activations, SAMPLES, BATCH_SIZE, NUM_BATCHES,hasScalarMixturePrior,pi,sigma1,sigma2):
         super().__init__()
         self.inputSize = inputSize
         self.activations = activations
@@ -100,18 +106,21 @@ class BayesianNetwork(nn.Module):
         self.BATCH_SIZE = BATCH_SIZE
         self.NUM_BATCHES = NUM_BATCHES
         self.DEPTH = 0
+        PI = pi
+        SIGMA_1 = sigma1
+        SIGMA_2 = sigma2
 
         self.layers = nn.ModuleList([])
         if layers.size == 0:
-            self.layers.append(BayesianLinear(inputSize, CLASSES))
+            self.layers.append(BayesianLinear(inputSize, CLASSES,hasScalarMixturePrior))
             self.DEPTH += 1
         else:
-            self.layers.append(BayesianLinear(inputSize, layers[0]))
+            self.layers.append(BayesianLinear(inputSize, layers[0],hasScalarMixturePrior))
             self.DEPTH += 1
             for i in range(layers.size-1):
-                self.layers.append(BayesianLinear(layers[i], layers[i+1]))
+                self.layers.append(BayesianLinear(layers[i], layers[i+1],hasScalarMixturePrior))
                 self.DEPTH += 1
-            self.layers.append(BayesianLinear(layers[layers.size-1], CLASSES))
+            self.layers.append(BayesianLinear(layers[layers.size-1], CLASSES,hasScalarMixturePrior))
             self.DEPTH += 1
             
     def forward(self, x, sample=False):

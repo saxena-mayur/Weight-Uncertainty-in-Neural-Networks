@@ -3,3 +3,4 @@ mnist/
 __pycache__/
 .ipynb_checkpoints/
 *.pth
+data/mnist/
