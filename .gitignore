@@ -5,5 +5,7 @@ __pycache__/
 .ipynb_checkpoints/
 *.pth
 data/mnist/
-*.idea/
+.idea/
+.DS_Store
+.gitignore
 

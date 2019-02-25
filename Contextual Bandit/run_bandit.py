@@ -111,7 +111,7 @@ class MushroomNet():
 
     def try_(self, mushroom):
         context, edible = x[mushroom], y[mushroom]
-        r_reject, r_eat = self.expected_rewards(context, k=1)
+        r_reject, r_eat = self.expected_rewards(context, k=2)
         eaten = r_eat > r_reject
         if np.random.rand()<self.epsilon:
             eaten = (np.random.rand()<.5)
