@@ -1,5 +1,4 @@
 # Credit: Kyuhong Shim(skhu20@snu.ac.kr) - https://github.com/khshim/pytorch_mnist
-
 import sys
 import csv
 import numpy as np
@@ -162,16 +161,15 @@ def main(cfg, lr, hidden_units, max_epoch):
         valid_accs[epoch] = valid_acc
         test_accs[epoch] = test_acc
 
+    """Save"""
     suffix = str(lr) + '_' + str(hidden_units)
 
-    """Save"""
-    wr = csv.writer(open('results/results_' + suffix + '.csv', 'w'),
-                    delimiter=',', lineterminator='\n')
+    wr = csv.writer(open('results/results_' + suffix + '.csv', 'w'), delimiter=',', lineterminator='\n')
     wr.writerow(['epoch', 'train_losses', 'valid_losses',
                  'valid_correct', 'test_losses', 'test_correct'])
     for i in range(max_epoch):
         wr.writerow((i + 1, train_losses[i], valid_losses[i],
-                     int(valid_accs[i]), test_losses[i], int(test_accs[i])))
+                     1 - valid_accs[i] / cfg.eval_batch_size, test_losses[i], 1 - test_accs[i] / cfg.eval_batch_size))
 
     torch.save(model.state_dict(), 'results/model_' + suffix + '.pth')
 
@@ -179,11 +177,12 @@ def main(cfg, lr, hidden_units, max_epoch):
 if __name__ == '__main__':
     """ARGS"""
     if len(sys.argv) < 4:
-        print('Call: python SGD.py [RATE 1-3] [UNITS 1-3] [EPOCHS]')
+        print('Call: python SGD.py [RATE 1-4] [UNITS 1-3] [EPOCHS]')
         sys.exit()
+
     lrs = [1e-3, 1e-4, 1e-5, 1e-2]
     lr = lrs[int(sys.argv[1]) - 1]
-    hidden_units = 400 * int(sys.argv[2])  # tested in paper: 400, 800, 1200
+    hidden_units = 400 * int(sys.argv[2])  # in paper: 400, 800, 1200
     enable_dropout = True
     max_epoch = int(sys.argv[3])
 
