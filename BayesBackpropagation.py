@@ -1,5 +1,6 @@
 import math
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import numpy as np
 import seaborn as sns
 import torch

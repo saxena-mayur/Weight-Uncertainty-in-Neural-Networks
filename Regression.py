@@ -82,8 +82,8 @@ outputs = torch.zeros(TEST_SAMPLES+1, TEST_BATCH_SIZE, CLASSES).to(DEVICE)
 for i in range(TEST_SAMPLES):
     outputs[i] = net.forward(X_test)
 outputs[TEST_SAMPLES] = net.forward(X_test)
-pred_mean = outputs.mean(0).data.numpy().cpu().squeeze(1) #Compute mean prediction
-pred_std = outputs.std(0).data.numpy().cpu().squeeze(1) #Compute standard deviation of prediction for each data point
+pred_mean = outputs.mean(0).data.cpu().numpy().squeeze(1) #Compute mean prediction
+pred_std = outputs.std(0).data.cpu().numpy().squeeze(1) #Compute standard deviation of prediction for each data point
 
 #Visualization
 plt.scatter(x, y, c='navy', label='target')
