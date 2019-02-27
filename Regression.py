@@ -12,7 +12,7 @@ def train(net, optimizer, data, target, NUM_BATCHES):
         optimizer.step()
 
 #Hyperparameter setting
-TRAIN_EPOCHS = 500
+TRAIN_EPOCHS = 6000
 SAMPLES = 1
 TEST_SAMPLES = 10
 BATCH_SIZE = 100
@@ -82,8 +82,8 @@ outputs = torch.zeros(TEST_SAMPLES+1, TEST_BATCH_SIZE, CLASSES).to(DEVICE)
 for i in range(TEST_SAMPLES):
     outputs[i] = net.forward(X_test)
 outputs[TEST_SAMPLES] = net.forward(X_test)
-pred_mean = outputs.mean(0).data.numpy().squeeze(1) #Compute mean prediction
-pred_std = outputs.std(0).data.numpy().squeeze(1) #Compute standard deviation of prediction for each data point
+pred_mean = outputs.mean(0).data.numpy().cpu().squeeze(1) #Compute mean prediction
+pred_std = outputs.std(0).data.numpy().cpu().squeeze(1) #Compute standard deviation of prediction for each data point
 
 #Visualization
 plt.scatter(x, y, c='navy', label='target')
