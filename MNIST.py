@@ -68,13 +68,13 @@ class MNIST(object):
     
     #Testing the ensemble
     def test(self,valid=True):
-        dataset = self.valid_loader if valid else self.test_loader
+        data_loader = self.valid_loader if valid else self.test_loader
         print('Testing begins!')
         self.net.eval()
         correct = 0
         corrects = np.zeros(self.TEST_SAMPLES+1, dtype=int)
         with torch.no_grad():
-            for data, target in self.test_loader:
+            for data, target in data_loader:
                 data, target = data.to(DEVICE), target.to(DEVICE) # Load data to cpu/gpu
                 outputs = torch.zeros(self.TEST_SAMPLES+1, self.TEST_BATCH_SIZE, self.CLASSES).to(DEVICE)
                 for i in range(self.TEST_SAMPLES): #testing over ensemble
