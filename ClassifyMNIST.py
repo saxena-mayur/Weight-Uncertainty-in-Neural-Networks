@@ -6,7 +6,7 @@ def multipleEpochAnalyis():
 
     #Hyperparameter declaration
     BATCH_SIZE = 100
-    TEST_BATCH_SIZE = 5
+    TEST_BATCH_SIZE = 1000
     CLASSES = 10
     TRAIN_EPOCHS = 5
     SAMPLES = 2
@@ -52,7 +52,7 @@ def MixtureVsGaussianAnalyis():
 
     #Hyperparameter setting
     BATCH_SIZE = 100
-    TEST_BATCH_SIZE = 5
+    TEST_BATCH_SIZE = 1000
     CLASSES = 10
     SAMPLES = 2
     TRAIN_EPOCHS = 600
@@ -90,7 +90,7 @@ def MixtureVsGaussianAnalyis():
                     TRAIN_EPOCHS = TRAIN_EPOCHS,\
                     SAMPLES = SAMPLES,\
                     TEST_SAMPLES = TEST_SAMPLES,\
-                    hasScalarMixturePrior = False,\ 
+                    hasScalarMixturePrior = False,\
                     PI = PI,\
                     SIGMA_1 = SIGMA_1,\
                     SIGMA_2 = SIGMA_2,\
@@ -112,7 +112,7 @@ def HyperparameterAnalysis():
     
     #hyper parameter declaration
     BATCH_SIZE = 100
-    TEST_BATCH_SIZE = 5
+    TEST_BATCH_SIZE = 1000
     CLASSES = 10
     TRAIN_EPOCHS = 600
     SAMPLES = np.array([1,2,5,10]) #possible values of sample size
