@@ -3,19 +3,23 @@ import numpy as np
 
 # Multiple epochs
 def multipleEpochAnalyis():
+
+    #Hyperparameter declaration
     BATCH_SIZE = 100
     TEST_BATCH_SIZE = 5
     CLASSES = 10
-    TRAIN_EPOCHS = 600
+    TRAIN_EPOCHS = 5
     SAMPLES = 2
     TEST_SAMPLES = 10
     PI = 0.5
     SIGMA_1 = torch.FloatTensor([math.exp(-0)])
     SIGMA_2 = torch.FloatTensor([math.exp(-6)])
     INPUT_SIZE = 28*28
-    LAYERS = np.array([1200,1200])
+    LAYERS = np.array([400,400])
 
-    errorRate = []
+    errorRate = [] #to store error rates at different epochs
+
+    #Declare object of class MNIST declared in MNIST.py
     mnist = MNIST(BATCH_SIZE = BATCH_SIZE,\
                 TEST_BATCH_SIZE = TEST_BATCH_SIZE,\
                 CLASSES = CLASSES,\
@@ -32,8 +36,7 @@ def multipleEpochAnalyis():
 
     for epoch in range(TRAIN_EPOCHS):
         mnist.train()
-        #accuracy.append([epoch,mnist.test()])
-        errorRate.append(1-mnist.test())
+        errorRate.append(1-mnist.test()) # 1-accuracy
 
     errorRate = np.asarray(errorRate)
     np.savetxt('./Results/BBB_epochs_errorRate.csv',errorRate,delimiter=",")
@@ -42,9 +45,12 @@ def multipleEpochAnalyis():
     plt.legend()
     plt.tight_layout()
     plt.savefig('./Results/MNIST_EPOCHS.png')
+    torch.save(mnist.net.state_dict(), './Models/BBB_MNIST.pth')
 
 # Scalar Mixture vs Gaussian
 def MixtureVsGaussianAnalyis():
+
+    #Hyperparameter setting
     BATCH_SIZE = 100
     TEST_BATCH_SIZE = 5
     CLASSES = 10
@@ -55,12 +61,14 @@ def MixtureVsGaussianAnalyis():
     SIGMA_1 = torch.FloatTensor([math.exp(-0)])
     SIGMA_2 = torch.FloatTensor([math.exp(-6)])
     INPUT_SIZE = 28*28
-    LAYERS = np.array([[400,400],[800,800],[1200,1200]])
+    LAYERS = np.array([[400,400],[800,800],[1200,1200]]) #Possible layer configuration
     reading = []
 
     for l in range(LAYERS.shape[0]):
         layer = np.asarray(LAYERS[l])
         print("Network architecture: ",layer)
+
+        #one with scalar mixture gaussian prior
         mnist = MNIST(BATCH_SIZE = BATCH_SIZE,\
                 TEST_BATCH_SIZE = TEST_BATCH_SIZE,\
                 CLASSES = CLASSES,\
@@ -74,14 +82,15 @@ def MixtureVsGaussianAnalyis():
                 INPUT_SIZE = INPUT_SIZE,\
                 LAYERS = layer,\
                 ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax']))
-    
+
+        #one with simple gaussian prior
         mnistGaussian = MNIST(BATCH_SIZE = BATCH_SIZE,\
                     TEST_BATCH_SIZE = TEST_BATCH_SIZE,\
                     CLASSES = CLASSES,\
                     TRAIN_EPOCHS = TRAIN_EPOCHS,\
                     SAMPLES = SAMPLES,\
                     TEST_SAMPLES = TEST_SAMPLES,\
-                    hasScalarMixturePrior = False,\
+                    hasScalarMixturePrior = False,\ 
                     PI = PI,\
                     SIGMA_1 = SIGMA_1,\
                     SIGMA_2 = SIGMA_2,\
@@ -100,15 +109,17 @@ def MixtureVsGaussianAnalyis():
 
 # Different values of sample, pi, sigma 1 and sigma 2
 def HyperparameterAnalysis():
+    
+    #hyper parameter declaration
     BATCH_SIZE = 100
     TEST_BATCH_SIZE = 5
     CLASSES = 10
     TRAIN_EPOCHS = 600
-    SAMPLES = np.array([1])
+    SAMPLES = np.array([1,2,5,10]) #possible values of sample size
     TEST_SAMPLES = 10
-    PI = np.array([0.25,0.5,0.75])
-    SIGMA_1 = np.array([0,1,2])
-    SIGMA_2 = np.array([6,7,8])
+    PI = np.array([0.25,0.5,0.75]) #possible values of pi
+    SIGMA_1 = np.array([0,1,2]) #possible values of sigma1 
+    SIGMA_2 = np.array([6,7,8]) #possible values of sigma2
     INPUT_SIZE = 28*28
     LAYERS = np.array([400,400])
 

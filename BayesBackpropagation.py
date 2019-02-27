@@ -13,15 +13,17 @@ from torchvision.utils import make_grid
 from tqdm import tqdm, trange
 from torch.autograd import Variable
 
+#Checking if gpu is available
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
 print("Cuda available?: ",torch.cuda.is_available())
 
+#Default declaration of values of PI, SIGMA_1 and SIGMA_2
 PI = 0.5
 SIGMA_1 = torch.FloatTensor([math.exp(-0)])
 SIGMA_2 = torch.FloatTensor([math.exp(-6)])
 
-
+#Gaussian class
 class Gaussian(object):
     def __init__(self, mu, rho):
         super().__init__()
@@ -31,7 +33,7 @@ class Gaussian(object):
     
     @property
     def sigma(self):
-        return torch.log1p(torch.exp(self.rho))
+        return torch.log1p(torch.exp(self.rho)) #as mentioned in paper, to make sigma always positive
     
     def sample(self):
         epsilon = self.normal.sample(self.rho.size()).to(DEVICE)
@@ -42,6 +44,7 @@ class Gaussian(object):
                 - torch.log(self.sigma)
                 - ((input - self.mu) ** 2) / (2 * self.sigma ** 2)).sum()
 
+#Mixing two gaussians based on a probability
 class ScaleMixtureGaussian(object):
     def __init__(self, pi, sigma1, sigma2):
         super().__init__()
@@ -54,8 +57,9 @@ class ScaleMixtureGaussian(object):
     def log_prob(self, input):
         prob1 = torch.exp(self.gaussian1.log_prob(input))
         prob2 = torch.exp(self.gaussian2.log_prob(input))
-        return (torch.log(self.pi * prob1 + (1-self.pi) * prob2)).sum()
+        return (torch.log(self.pi * prob1 + (1-self.pi) * prob2)).sum() #scalar mixing
 
+#Single Bayesian fully connected Layer with linear activation function  
 class BayesianLinear(nn.Module):
     def __init__(self, in_features, out_features, hasScalarMixturePrior):
         super().__init__()
@@ -72,6 +76,7 @@ class BayesianLinear(nn.Module):
         # Prior distributions
         self.weight_prior = 0
         self.bias_prior = 0
+        #To set type of prior distribution
         if hasScalarMixturePrior == True:
             self.weight_prior = ScaleMixtureGaussian(PI, SIGMA_1, SIGMA_2)
             self.bias_prior = ScaleMixtureGaussian(PI, SIGMA_1, SIGMA_2)
@@ -81,6 +86,7 @@ class BayesianLinear(nn.Module):
         self.log_prior = 0
         self.log_variational_posterior = 0
 
+    #Forward propagation
     def forward(self, input, sample=False, calculate_log_probs=False):
         if self.training or sample:
             weight = self.weight.sample()
@@ -105,12 +111,15 @@ class BayesianNetwork(nn.Module):
         self.SAMPLES = SAMPLES
         self.BATCH_SIZE = BATCH_SIZE
         self.NUM_BATCHES = NUM_BATCHES
-        self.DEPTH = 0
+        self.DEPTH = 0 #captures depth of network
+        #Updating the global variables
         PI = pi
         SIGMA_1 = sigma1
         SIGMA_2 = sigma2
+        #to make sure that number of hidden layers is one less than number of activation function
+        assert (activations.size - layers.size) == 1 
 
-        self.layers = nn.ModuleList([])
+        self.layers = nn.ModuleList([]) #To combine consecutive layers
         if layers.size == 0:
             self.layers.append(BayesianLinear(inputSize, CLASSES,hasScalarMixturePrior))
             self.DEPTH += 1
@@ -120,9 +129,10 @@ class BayesianNetwork(nn.Module):
             for i in range(layers.size-1):
                 self.layers.append(BayesianLinear(layers[i], layers[i+1],hasScalarMixturePrior))
                 self.DEPTH += 1
-            self.layers.append(BayesianLinear(layers[layers.size-1], CLASSES,hasScalarMixturePrior))
+            self.layers.append(BayesianLinear(layers[layers.size-1], CLASSES,hasScalarMixturePrior)) #output layer
             self.DEPTH += 1
-            
+    
+    #Forward propagation and assigning activation functions to linear layers
     def forward(self, x, sample=False):
         x = x.view(-1, self.inputSize)
         layerNumber = 0
