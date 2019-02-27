@@ -20,8 +20,14 @@ print("Cuda available?: ",torch.cuda.is_available())
 
 #Default declaration of values of PI, SIGMA_1 and SIGMA_2
 PI = 0.5
-SIGMA_1 = torch.FloatTensor([math.exp(-0)])
-SIGMA_2 = torch.FloatTensor([math.exp(-6)])
+SIGMA_1 = 0
+SIGMA_2 = 0
+if torch.cuda.is_available():
+    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
+    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
+else:
+    SIGMA_1 = torch.FloatTensor([math.exp(-0)])
+    SIGMA_2 = torch.FloatTensor([math.exp(-6)])
 
 #Gaussian class
 class Gaussian(object):

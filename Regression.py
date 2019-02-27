@@ -20,14 +20,22 @@ NUM_BATCHES = 5
 TEST_BATCH_SIZE = 50
 CLASSES = 1
 PI = 0.5
-SIGMA_1 = torch.FloatTensor([math.exp(-0)])
-SIGMA_2 = torch.FloatTensor([math.exp(-6)])
-
+SIGMA_1 = 0
+SIGMA_2 = 0
+if torch.cuda.is_available():
+    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
+    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
+else:
+    SIGMA_1 = torch.FloatTensor([math.exp(-0)])
+    SIGMA_2 = torch.FloatTensor([math.exp(-6)])
 
 print('Generating Data set.')
 
 #Data Generation step
-Var = lambda x, dtype=torch.FloatTensor: Variable(torch.from_numpy(x).type(dtype)) #converting data to tensor
+if torch.cuda.is_available():
+    Var = lambda x, dtype=torch.cuda.FloatTensor: Variable(torch.from_numpy(x).type(dtype)) #converting data to tensor
+else:
+    Var = lambda x, dtype=torch.FloatTensor: Variable(torch.from_numpy(x).type(dtype)) #converting data to tensor
 
 x = np.random.uniform(-0.1, 0.45, size=(NUM_BATCHES,BATCH_SIZE))
 noise = np.random.normal(0, 0.02, size=(NUM_BATCHES,BATCH_SIZE)) #metric as mentioned in the paper
