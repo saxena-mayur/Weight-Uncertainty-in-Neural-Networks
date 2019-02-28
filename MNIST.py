@@ -59,7 +59,7 @@ class MNIST(object):
     #Define the training step for MNIST data set
     def train(self):
         self.net.train()
-        for batch_idx, (data, target) in enumerate(tqdm(self.train_loader)):
+        for batch_idx, (data, target) in enumerate(self.train_loader):
             data, target = data.to(DEVICE), target.to(DEVICE)
             self.net.zero_grad()
             loss, log_prior, log_variational_posterior, negative_log_likelihood = self.net.sample_elbo(data, target)
@@ -69,7 +69,6 @@ class MNIST(object):
     #Testing the ensemble
     def test(self,valid=True):
         data_loader = self.valid_loader if valid else self.test_loader
-        print('Testing begins!')
         self.net.eval()
         correct = 0
         corrects = np.zeros(self.TEST_SAMPLES+1, dtype=int)
