@@ -35,7 +35,7 @@ class Gaussian(object):
         return self.mu + self.sigma * epsilon
     
     def log_prob(self, input):
-        return (- 0.5 * math.log(math.sqrt(2 * math.pi))
+        return (- 0.5 * math.log(2 * math.pi)
                 - torch.log(self.sigma)
                 - (input - self.mu)**2 / (2 * self.sigma ** 2)).sum()
 
