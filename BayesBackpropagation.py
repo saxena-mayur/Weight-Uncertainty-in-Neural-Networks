@@ -1,17 +1,16 @@
 import math
-import matplotlib.pyplot as plt
-plt.switch_backend('agg')
+#import matplotlib.pyplot as plt
+#plt.switch_backend('agg')
 import numpy as np
-import seaborn as sns
+#import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from tensorboardX import SummaryWriter
+#from tensorboardX import SummaryWriter
 from torchvision import datasets, transforms
 from torchvision.utils import make_grid
-from tqdm import tqdm, trange
 from torch.autograd import Variable
 
 #Checking if gpu is available
@@ -182,7 +181,7 @@ class BayesianNetwork(nn.Module):
         log_prior = log_priors.mean()
         log_variational_posterior = log_variational_posteriors.mean()
         if self.CLASSES > 1:
-            negative_log_likelihood = F.nll_loss(outputs.mean(0), target, size_average=False)
+            negative_log_likelihood = F.nll_loss(outputs.mean(0), target, reduction='sum')
         else:
             negative_log_likelihood = negative_log_likelihood.mean()
         loss = (log_variational_posterior - log_prior)/self.NUM_BATCHES + negative_log_likelihood
