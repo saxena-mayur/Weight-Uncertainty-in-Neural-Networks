@@ -39,7 +39,7 @@ class MNIST(object):
         #Checking if the mentioned batch sizes are feasible
         assert (self.TRAIN_SIZE % BATCH_SIZE) == 0
         assert (self.TEST_SIZE % TEST_BATCH_SIZE) == 0
-    
+
         #Network Declaration
         self.net = BayesianNetwork(inputSize = INPUT_SIZE,\
                       CLASSES = CLASSES, \
@@ -49,9 +49,9 @@ class MNIST(object):
                       BATCH_SIZE = BATCH_SIZE,\
                       NUM_BATCHES = self.NUM_BATCHES,\
                       hasScalarMixturePrior = hasScalarMixturePrior,\
-                      pi= PI,\
-                      sigma1 = SIGMA_1,\
-                      sigma2 = SIGMA_2).to(DEVICE)
+                      PI = PI,\
+                      SIGMA_1 = SIGMA_1,\
+                      SIGMA_2 = SIGMA_2).to(DEVICE)
 
         #Optimizer declaration
         self.optimizer = optim.SGD(self.net.parameters(),lr=LR) #self.optimizer = optim.Adam(self.net.parameters())

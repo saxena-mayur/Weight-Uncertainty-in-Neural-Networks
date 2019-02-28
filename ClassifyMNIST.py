@@ -13,8 +13,8 @@ def multipleEpochAnalyis():
     SAMPLES = 2
     TEST_SAMPLES = 10
     PI = 0.5
-    SIGMA_1 = torch.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.FloatTensor([math.exp(-6)])
+    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
+    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
     INPUT_SIZE = 28*28
     LAYERS = np.array([400,400])
 
@@ -59,8 +59,8 @@ def MixtureVsGaussianAnalyis():
     TRAIN_EPOCHS = 600
     TEST_SAMPLES = 10
     PI = 0.5
-    SIGMA_1 = torch.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.FloatTensor([math.exp(-6)])
+    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
+    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
     INPUT_SIZE = 28*28
     LAYERS = np.array([[400,400],[800,800],[1200,1200]]) #Possible layer configuration
     reading = []
@@ -140,8 +140,8 @@ def HyperparameterAnalysis():
                                     TEST_SAMPLES = TEST_SAMPLES,\
                                     hasScalarMixturePrior = True,\
                                     PI = PI[pi],\
-                                    SIGMA_1 = torch.FloatTensor([math.exp(-SIGMA_1[sigma1])]),\
-                                    SIGMA_2 = torch.FloatTensor([math.exp(-SIGMA_2[sigma2])]),\
+                                    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-SIGMA_1[sigma1])]),\
+                                    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-SIGMA_2[sigma2])]),\
                                     INPUT_SIZE = INPUT_SIZE,\
                                     LAYERS = LAYERS,\
                                     ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax']),\

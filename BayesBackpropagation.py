@@ -14,20 +14,9 @@ from torchvision.utils import make_grid
 from torch.autograd import Variable
 
 #Checking if gpu is available
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-print("Cuda available?: ",torch.cuda.is_available())
-
-#Default declaration of values of PI, SIGMA_1 and SIGMA_2
-PI = 0.5
-SIGMA_1 = 0
-SIGMA_2 = 0
-if torch.cuda.is_available():
-    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
-else:
-    SIGMA_1 = torch.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.FloatTensor([math.exp(-6)])
+hasGPU = torch.cuda.is_available()
+DEVICE = torch.device("cuda" if hasGPU else "cpu")
+LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if hasGPU else {}
 
 #Gaussian class
 class Gaussian(object):
@@ -46,9 +35,9 @@ class Gaussian(object):
         return self.mu + self.sigma * epsilon
     
     def log_prob(self, input):
-        return (-math.log(math.sqrt(2 * math.pi))
+        return (- 0.5 * math.log(math.sqrt(2 * math.pi))
                 - torch.log(self.sigma)
-                - ((input - self.mu) ** 2) / (2 * self.sigma ** 2)).sum()
+                - (input - self.mu)**2 / (2 * self.sigma ** 2)).sum()
 
 #Mixing two gaussians based on a probability
 class ScaleMixtureGaussian(object):
@@ -67,7 +56,7 @@ class ScaleMixtureGaussian(object):
 
 #Single Bayesian fully connected Layer with linear activation function  
 class BayesianLinear(nn.Module):
-    def __init__(self, in_features, out_features, hasScalarMixturePrior):
+    def __init__(self, in_features, out_features, parent):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -80,17 +69,14 @@ class BayesianLinear(nn.Module):
         self.bias_rho = nn.Parameter(torch.Tensor(out_features).uniform_(-5,-4))
         self.bias = Gaussian(self.bias_mu, self.bias_rho)
         # Prior distributions
-        self.weight_prior = 0
-        self.bias_prior = 0
-        #To set type of prior distribution
-        if hasScalarMixturePrior == True:
-            self.weight_prior = ScaleMixtureGaussian(PI, SIGMA_1, SIGMA_2)
-            self.bias_prior = ScaleMixtureGaussian(PI, SIGMA_1, SIGMA_2)
+        if parent.hasScalarMixturePrior == True:
+            self.weight_prior = ScaleMixtureGaussian(parent.PI, parent.SIGMA_1, parent.SIGMA_2)
+            self.bias_prior = ScaleMixtureGaussian(parent.PI, parent.SIGMA_1, parent.SIGMA_2)
         else:
-            self.weight_prior = Gaussian(0, SIGMA_1)
-            self.bias_prior = Gaussian(0, SIGMA_1)
-        self.log_prior = 0
-        self.log_variational_posterior = 0
+            self.weight_prior = Gaussian(0, parent.SIGMA_1)
+            self.bias_prior = Gaussian(0, parent.SIGMA_1)
+        self.log_prior = 0.
+        self.log_variational_posterior = 0.
 
     #Forward propagation
     def forward(self, input, sample=False, calculate_log_probs=False):
@@ -104,12 +90,12 @@ class BayesianLinear(nn.Module):
             self.log_prior = self.weight_prior.log_prob(weight) + self.bias_prior.log_prob(bias)
             self.log_variational_posterior = self.weight.log_prob(weight) + self.bias.log_prob(bias)
         else:
-            self.log_prior, self.log_variational_posterior = 0, 0
+            self.log_prior, self.log_variational_posterior = 0., 0.
 
         return F.linear(input, weight, bias)
 
 class BayesianNetwork(nn.Module):
-    def __init__(self, inputSize, CLASSES, layers, activations, SAMPLES, BATCH_SIZE, NUM_BATCHES,hasScalarMixturePrior,pi,sigma1,sigma2):
+    def __init__(self, inputSize, CLASSES, layers, activations, SAMPLES, BATCH_SIZE, NUM_BATCHES, hasScalarMixturePrior, PI, SIGMA_1, SIGMA_2):
         super().__init__()
         self.inputSize = inputSize
         self.activations = activations
@@ -118,24 +104,26 @@ class BayesianNetwork(nn.Module):
         self.BATCH_SIZE = BATCH_SIZE
         self.NUM_BATCHES = NUM_BATCHES
         self.DEPTH = 0 #captures depth of network
-        #Updating the global variables
-        PI = pi
-        SIGMA_1 = sigma1
-        SIGMA_2 = sigma2
         #to make sure that number of hidden layers is one less than number of activation function
-        assert (activations.size - layers.size) == 1 
+        assert (activations.size - layers.size) == 1
+
+        self.SIGMA_1 = SIGMA_1
+        self.hasScalarMixturePrior = hasScalarMixturePrior
+        if hasScalarMixturePrior == True:
+            self.SIGMA_2 = SIGMA_2
+            self.PI = PI
 
         self.layers = nn.ModuleList([]) #To combine consecutive layers
         if layers.size == 0:
-            self.layers.append(BayesianLinear(inputSize, CLASSES,hasScalarMixturePrior))
+            self.layers.append(BayesianLinear(inputSize, CLASSES, self))
             self.DEPTH += 1
         else:
-            self.layers.append(BayesianLinear(inputSize, layers[0],hasScalarMixturePrior))
+            self.layers.append(BayesianLinear(inputSize, layers[0], self))
             self.DEPTH += 1
             for i in range(layers.size-1):
-                self.layers.append(BayesianLinear(layers[i], layers[i+1],hasScalarMixturePrior))
+                self.layers.append(BayesianLinear(layers[i], layers[i+1], self))
                 self.DEPTH += 1
-            self.layers.append(BayesianLinear(layers[layers.size-1], CLASSES,hasScalarMixturePrior)) #output layer
+            self.layers.append(BayesianLinear(layers[layers.size-1], CLASSES, self)) #output layer
             self.DEPTH += 1
     
     #Forward propagation and assigning activation functions to linear layers
@@ -152,37 +140,41 @@ class BayesianNetwork(nn.Module):
             layerNumber+= 1
         return x
     
-    def log_prior(self):
-        value = 0
+    def log_prior(self): # p(w) in paper
+        value = 0.
         for i in range(self.DEPTH):
             value+= self.layers[i].log_prior
         return value
     
-    def log_variational_posterior(self):
-        value = 0
+    def log_variational_posterior(self): # q(w) in paper
+        value = 0.
         for i in range(self.DEPTH):
             value+= self.layers[i].log_variational_posterior
         return value
     
     def sample_elbo(self, input, target):
-        samples=self.SAMPLES
-        outputs = torch.zeros(samples, self.BATCH_SIZE, self.CLASSES).to(DEVICE)
-        log_priors = torch.zeros(samples).to(DEVICE)
-        log_variational_posteriors = torch.zeros(samples).to(DEVICE)
-        negative_log_likelihood = torch.zeros(samples).to(DEVICE)
+        # Reserve memory in GPU for computations
+        outputs = torch.zeros(self.SAMPLES, self.BATCH_SIZE, self.CLASSES).to(DEVICE)
+        qws = torch.zeros(self.SAMPLES).to(DEVICE)
+        pws = torch.zeros(self.SAMPLES).to(DEVICE)
+        ll = torch.zeros(self.SAMPLES).to(DEVICE)
         
-        for i in range(samples):
+        for i in range(self.SAMPLES):
             outputs[i] = self.forward(input, sample=True)
-            log_priors[i] = self.log_prior()
-            log_variational_posteriors[i] = self.log_variational_posterior()
-            if self.CLASSES == 1:
-                negative_log_likelihood[i] = (.5 * (target - outputs[i]) ** 2).sum()
-            
-        log_prior = log_priors.mean()
-        log_variational_posterior = log_variational_posteriors.mean()
-        if self.CLASSES > 1:
-            negative_log_likelihood = F.nll_loss(outputs.mean(0), target, reduction='sum')
+            pws[i] = self.log_prior() # p(w) in paper
+            qws[i] = self.log_variational_posterior() # q(w) in paper
+            if self.CLASSES == 1: # quadratic loss for regression TODO: WHY NOT LOG?
+                ll[i] = -(.5 * (target - outputs[i]) ** 2).sum()
+        
+        # Aggregate results
+        pw = pws.mean()
+        qw = pws.mean()
+        
+        if self.CLASSES == 1:
+            ll = ll.mean()
         else:
-            negative_log_likelihood = negative_log_likelihood.mean()
-        loss = (log_variational_posterior - log_prior)/self.NUM_BATCHES + negative_log_likelihood
-        return loss, log_prior, log_variational_posterior, negative_log_likelihood
+            ll = - F.nll_loss(outputs.mean(0), target, reduction='sum')
+        
+        loss = (qw - pw)/self.NUM_BATCHES - ll
+        
+        return loss, pw, qw, ll
