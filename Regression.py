@@ -1,4 +1,6 @@
 from BayesBackpropagation import *
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 
 # Define training step for regression
 def train(net, optimizer, data, target, NUM_BATCHES):
@@ -12,10 +14,10 @@ def train(net, optimizer, data, target, NUM_BATCHES):
         optimizer.step()
 
 #Hyperparameter setting
-TRAIN_EPOCHS = 6000
+TRAIN_EPOCHS = 5000
 SAMPLES = 1
 TEST_SAMPLES = 10
-BATCH_SIZE = 100
+BATCH_SIZE = 50
 NUM_BATCHES = 5
 TEST_BATCH_SIZE = 50
 CLASSES = 1
@@ -59,15 +61,15 @@ print('Training Begins!')
 #Declare Network
 net = BayesianNetwork(inputSize = 1,\
                       CLASSES = CLASSES, \
-                      layers=np.array([100,400,400]), \
-                      activations = np.array(['relu','relu','relu','none']), \
+                      layers=np.array([100,100]), \
+                      activations = np.array(['relu','relu','none']), \
                       SAMPLES = SAMPLES, \
                       BATCH_SIZE = BATCH_SIZE,\
                       NUM_BATCHES = NUM_BATCHES,\
                       hasScalarMixturePrior = True,\
-                      pi = PI,\
-                      sigma1 = SIGMA_1,\
-                      sigma2 = SIGMA_2).to(DEVICE)
+                      PI = PI,\
+                      SIGMA_1 = SIGMA_1,\
+                      SIGMA_2 = SIGMA_2).to(DEVICE)
 
 #Declare the optimizer
 optimizer = optim.SGD(net.parameters(),lr=1e-4,momentum=0.9) #optimizer = optim.Adam(net.parameters())

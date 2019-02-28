@@ -1,14 +1,10 @@
 import math
-#import matplotlib.pyplot as plt
-#plt.switch_backend('agg')
 import numpy as np
-#import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-#from tensorboardX import SummaryWriter
 from torchvision import datasets, transforms
 from torchvision.utils import make_grid
 from torch.autograd import Variable
