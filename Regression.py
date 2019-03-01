@@ -1,6 +1,6 @@
 from BayesBackpropagation import *
 import matplotlib.pyplot as plt
-plt.switch_backend('agg')
+#plt.switch_backend('agg')
 
 # Define training step for regression
 def train(net, optimizer, data, target, NUM_BATCHES):
@@ -14,22 +14,19 @@ def train(net, optimizer, data, target, NUM_BATCHES):
         optimizer.step()
 
 #Hyperparameter setting
-TRAIN_EPOCHS = 5000
-SAMPLES = 1
+TRAIN_EPOCHS = 600
+SAMPLES = 2
 TEST_SAMPLES = 10
-BATCH_SIZE = 50
-NUM_BATCHES = 5
-TEST_BATCH_SIZE = 50
+BATCH_SIZE = 200
+NUM_BATCHES = 20
+TEST_BATCH_SIZE = 100
 CLASSES = 1
 PI = 0.5
-SIGMA_1 = 0
-SIGMA_2 = 0
+SIGMA_1 = torch.FloatTensor([math.exp(-0)])
+SIGMA_2 = torch.FloatTensor([math.exp(-6)])
 if torch.cuda.is_available():
     SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
     SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
-else:
-    SIGMA_1 = torch.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.FloatTensor([math.exp(-6)])
 
 print('Generating Data set.')
 
@@ -61,8 +58,8 @@ print('Training Begins!')
 #Declare Network
 net = BayesianNetwork(inputSize = 1,\
                       CLASSES = CLASSES, \
-                      layers=np.array([100,100]), \
-                      activations = np.array(['relu','relu','none']), \
+                      layers=np.array([100]), \
+                      activations = np.array(['relu','none']), \
                       SAMPLES = SAMPLES, \
                       BATCH_SIZE = BATCH_SIZE,\
                       NUM_BATCHES = NUM_BATCHES,\
@@ -72,7 +69,8 @@ net = BayesianNetwork(inputSize = 1,\
                       SIGMA_2 = SIGMA_2).to(DEVICE)
 
 #Declare the optimizer
-optimizer = optim.SGD(net.parameters(),lr=1e-4,momentum=0.9) #optimizer = optim.Adam(net.parameters())
+#optimizer = optim.SGD(net.parameters(),lr=1e-4,momentum=0.9) #
+optimizer = optim.Adam(net.parameters())
 
 for epoch in range(TRAIN_EPOCHS):
     train(net, optimizer,data=X,target=Y,NUM_BATCHES=NUM_BATCHES)
@@ -96,7 +94,7 @@ plt.plot(x_test, y_test, c='grey', label='truth')
 plt.legend()
 plt.tight_layout()
 plt.savefig('./Results/Regression.png')
-#plt.show()
+plt.show()
 
 #Save the trained model
-torch.save(net.state_dict(), './Models/Regression.pth')
+#torch.save(net.state_dict(), './Models/Regression.pth')

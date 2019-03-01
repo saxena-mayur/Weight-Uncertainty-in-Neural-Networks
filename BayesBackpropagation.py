@@ -31,9 +31,9 @@ class Gaussian(object):
         return self.mu + self.sigma * epsilon
     
     def log_prob(self, input):
-        return (- 0.5 * math.log(2 * math.pi)
+        return (-math.log(math.sqrt(2 * math.pi))
                 - torch.log(self.sigma)
-                - (input - self.mu)**2 / (2 * self.sigma ** 2)).sum()
+                - ((input - self.mu) ** 2) / (2 * self.sigma ** 2)).sum()
 
 #Mixing two gaussians based on a probability
 class ScaleMixtureGaussian(object):
@@ -71,8 +71,8 @@ class BayesianLinear(nn.Module):
         else:
             self.weight_prior = Gaussian(0, parent.SIGMA_1)
             self.bias_prior = Gaussian(0, parent.SIGMA_1)
-        self.log_prior = 0.
-        self.log_variational_posterior = 0.
+        self.log_prior = 0
+        self.log_variational_posterior = 0
 
     #Forward propagation
     def forward(self, input, sample=False, calculate_log_probs=False):
@@ -86,7 +86,7 @@ class BayesianLinear(nn.Module):
             self.log_prior = self.weight_prior.log_prob(weight) + self.bias_prior.log_prob(bias)
             self.log_variational_posterior = self.weight.log_prob(weight) + self.bias.log_prob(bias)
         else:
-            self.log_prior, self.log_variational_posterior = 0., 0.
+            self.log_prior, self.log_variational_posterior = 0, 0
 
         return F.linear(input, weight, bias)
 
@@ -147,7 +147,7 @@ class BayesianNetwork(nn.Module):
         for i in range(self.DEPTH):
             value+= self.layers[i].log_variational_posterior
         return value
-    
+    """
     def sample_elbo(self, input, target):
         # Reserve memory in GPU for computations
         outputs = torch.zeros(self.SAMPLES, self.BATCH_SIZE, self.CLASSES).to(DEVICE)
@@ -174,3 +174,26 @@ class BayesianNetwork(nn.Module):
         loss = (qw - pw)/self.NUM_BATCHES - ll
         
         return loss, pw, qw, ll
+    """
+    def sample_elbo(self, input, target):
+        samples=self.SAMPLES
+        outputs = torch.zeros(samples, self.BATCH_SIZE, self.CLASSES).to(DEVICE)
+        log_priors = torch.zeros(samples).to(DEVICE)
+        log_variational_posteriors = torch.zeros(samples).to(DEVICE)
+        negative_log_likelihood = torch.zeros(samples).to(DEVICE)
+        
+        for i in range(samples):
+            outputs[i] = self.forward(input, sample=True)
+            log_priors[i] = self.log_prior()
+            log_variational_posteriors[i] = self.log_variational_posterior()
+            if self.CLASSES == 1:
+                negative_log_likelihood[i] = (.5 * (target - outputs[i]) ** 2).sum()
+            
+        log_prior = log_priors.mean()
+        log_variational_posterior = log_variational_posteriors.mean()
+        if self.CLASSES > 1:
+            negative_log_likelihood = F.nll_loss(outputs.mean(0), target, size_average=False)
+        else:
+            negative_log_likelihood = negative_log_likelihood.mean()
+        loss = (log_variational_posterior - log_prior)/self.NUM_BATCHES + negative_log_likelihood
+        return loss, log_prior, log_variational_posterior, negative_log_likelihood
