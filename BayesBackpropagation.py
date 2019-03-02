@@ -71,18 +71,15 @@ class BayesianLinear(nn.Module):
         else:
             self.weight_prior = Gaussian(0, parent.SIGMA_1)
             self.bias_prior = Gaussian(0, parent.SIGMA_1)
-        self.log_prior = 0.
-        self.log_variational_posterior = 0.
-        self.SIGMA_1 = parent.SIGMA_1
-        self.SIGMA_2 = parent.SIGMA_2
+        self.log_prior = 0
+        self.log_variational_posterior = 0
 
     #Forward propagation
     def forward(self, input, sample=False, calculate_log_probs=False):
         
-        #epsilon_W, epsilon_b = self.get_random()
         if self.training or sample:
-            weight = self.weight.sample() #* epsilon_W
-            bias = self.bias.sample() #* epsilon_b
+            weight = self.weight.sample() 
+            bias = self.bias.sample()
         else:
             weight = self.weight.mu
             bias = self.bias.mu
@@ -93,10 +90,6 @@ class BayesianLinear(nn.Module):
             self.log_prior, self.log_variational_posterior = 0, 0
 
         return F.linear(input, weight, bias)
-    
-    def get_random(self):
-        return Variable(torch.Tensor(self.in_features).normal_(0, float(self.SIGMA_1)).to(DEVICE)),\
-                 Variable(torch.Tensor(self.out_features).normal_(0, float(self.SIGMA_1)).to(DEVICE))
 
 class BayesianNetwork(nn.Module):
     def __init__(self, inputSize, CLASSES, layers, activations, SAMPLES, BATCH_SIZE, NUM_BATCHES, hasScalarMixturePrior, PI, SIGMA_1, SIGMA_2):
@@ -200,7 +193,7 @@ class BayesianNetwork(nn.Module):
         log_prior = log_priors.mean()
         log_variational_posterior = log_variational_posteriors.mean()
         if self.CLASSES > 1:
-            negative_log_likelihood = negative_log_likelihood.sum()#F.nll_loss(outputs.mean(0), target, reduction='sum')
+            negative_log_likelihood = F.nll_loss(outputs.mean(0), target, reduction='sum') #negative_log_likelihood.sum()#
         else:
             negative_log_likelihood = negative_log_likelihood.mean()
         loss = (log_variational_posterior - log_prior)/self.NUM_BATCHES + negative_log_likelihood

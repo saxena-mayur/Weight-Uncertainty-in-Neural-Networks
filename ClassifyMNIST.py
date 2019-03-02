@@ -6,15 +6,18 @@ from tqdm import tqdm, trange
 def multipleEpochAnalyis():
 
     #Hyperparameter declaration
-    BATCH_SIZE = 125
+    BATCH_SIZE = 100
     TEST_BATCH_SIZE = 1000
     CLASSES = 10
     TRAIN_EPOCHS = 600
-    SAMPLES = 2
+    SAMPLES = 10
     TEST_SAMPLES = 10
     PI = 0.5
-    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
+    SIGMA_1 = torch.FloatTensor([math.exp(-0)])
+    SIGMA_2 = torch.FloatTensor([math.exp(-6)])
+    if torch.cuda.is_available():
+        SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
+        SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
     INPUT_SIZE = 28*28
     LAYERS = np.array([400,400])
 
@@ -41,7 +44,6 @@ def multipleEpochAnalyis():
 
     errorRate = np.asarray(errorRate)
     np.savetxt('./Results/BBB_epochs_errorRate.csv',errorRate,delimiter=",")
-
     #plt.plot(range(TRAIN_EPOCHS), errorRate, c='royalblue', label='Bayes BackProp')
     #plt.legend()
     #plt.tight_layout()
@@ -158,5 +160,5 @@ def HyperparameterAnalysis():
     np.savetxt('./Results/BBB_hyperparameters.csv',errorRate,delimiter=",")
 
 multipleEpochAnalyis()
-MixtureVsGaussianAnalyis()
-HyperparameterAnalysis()
+#MixtureVsGaussianAnalyis()
+#HyperparameterAnalysis()
