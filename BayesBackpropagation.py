@@ -57,12 +57,12 @@ class BayesianLinear(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         # Weight parameters
-        self.weight_mu = nn.Parameter(torch.Tensor(out_features, in_features).uniform_(-0.2, 0.2))
-        self.weight_rho = nn.Parameter(torch.Tensor(out_features, in_features).uniform_(-5,-4))
+        self.weight_mu = nn.Parameter(torch.Tensor(out_features, in_features).uniform_(-0.2, 0.2))#.normal_(0, 0.01))#
+        self.weight_rho = nn.Parameter(torch.Tensor(out_features, in_features).uniform_(-5,-4))# .normal_(0, 0.01))#
         self.weight = Gaussian(self.weight_mu, self.weight_rho)
         # Bias parameters
-        self.bias_mu = nn.Parameter(torch.Tensor(out_features).uniform_(-0.2, 0.2))
-        self.bias_rho = nn.Parameter(torch.Tensor(out_features).uniform_(-5,-4))
+        self.bias_mu = nn.Parameter(torch.Tensor(out_features).uniform_(-0.2, 0.2))#.uniform_(-0.01, 0.01))#
+        self.bias_rho = nn.Parameter(torch.Tensor(out_features).uniform_(-5,-4))#.uniform_(-0.01, 0.01))#
         self.bias = Gaussian(self.bias_mu, self.bias_rho)
         # Prior distributions
         if parent.hasScalarMixturePrior == True:
@@ -71,14 +71,18 @@ class BayesianLinear(nn.Module):
         else:
             self.weight_prior = Gaussian(0, parent.SIGMA_1)
             self.bias_prior = Gaussian(0, parent.SIGMA_1)
-        self.log_prior = 0
-        self.log_variational_posterior = 0
+        self.log_prior = 0.
+        self.log_variational_posterior = 0.
+        self.SIGMA_1 = parent.SIGMA_1
+        self.SIGMA_2 = parent.SIGMA_2
 
     #Forward propagation
     def forward(self, input, sample=False, calculate_log_probs=False):
+        
+        #epsilon_W, epsilon_b = self.get_random()
         if self.training or sample:
-            weight = self.weight.sample()
-            bias = self.bias.sample()
+            weight = self.weight.sample() #* epsilon_W
+            bias = self.bias.sample() #* epsilon_b
         else:
             weight = self.weight.mu
             bias = self.bias.mu
@@ -89,6 +93,10 @@ class BayesianLinear(nn.Module):
             self.log_prior, self.log_variational_posterior = 0, 0
 
         return F.linear(input, weight, bias)
+    
+    def get_random(self):
+        return Variable(torch.Tensor(self.in_features).normal_(0, float(self.SIGMA_1)).to(DEVICE)),\
+                 Variable(torch.Tensor(self.out_features).normal_(0, float(self.SIGMA_1)).to(DEVICE))
 
 class BayesianNetwork(nn.Module):
     def __init__(self, inputSize, CLASSES, layers, activations, SAMPLES, BATCH_SIZE, NUM_BATCHES, hasScalarMixturePrior, PI, SIGMA_1, SIGMA_2):
@@ -192,7 +200,7 @@ class BayesianNetwork(nn.Module):
         log_prior = log_priors.mean()
         log_variational_posterior = log_variational_posteriors.mean()
         if self.CLASSES > 1:
-            negative_log_likelihood = F.nll_loss(outputs.mean(0), target, size_average=False)
+            negative_log_likelihood = negative_log_likelihood.sum()#F.nll_loss(outputs.mean(0), target, reduction='sum')
         else:
             negative_log_likelihood = negative_log_likelihood.mean()
         loss = (log_variational_posterior - log_prior)/self.NUM_BATCHES + negative_log_likelihood

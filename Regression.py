@@ -1,10 +1,10 @@
 from BayesBackpropagation import *
 import matplotlib.pyplot as plt
-#plt.switch_backend('agg')
+plt.switch_backend('agg')
 
 # Define training step for regression
 def train(net, optimizer, data, target, NUM_BATCHES):
-    net.train()
+    #net.train()
     for i in range(NUM_BATCHES):
         net.zero_grad()
         x = data[i].reshape((-1, 1))
@@ -14,8 +14,8 @@ def train(net, optimizer, data, target, NUM_BATCHES):
         optimizer.step()
 
 #Hyperparameter setting
-TRAIN_EPOCHS = 600
-SAMPLES = 2
+TRAIN_EPOCHS = 500
+SAMPLES = 10
 TEST_SAMPLES = 10
 BATCH_SIZE = 200
 NUM_BATCHES = 20
@@ -36,13 +36,13 @@ if torch.cuda.is_available():
 else:
     Var = lambda x, dtype=torch.FloatTensor: Variable(torch.from_numpy(x).type(dtype)) #converting data to tensor
 
-x = np.random.uniform(-0.1, 0.45, size=(NUM_BATCHES,BATCH_SIZE))
+x = np.random.uniform(-0.1, 0.6, size=(NUM_BATCHES,BATCH_SIZE))
 noise = np.random.normal(0, 0.02, size=(NUM_BATCHES,BATCH_SIZE)) #metric as mentioned in the paper
 y = x + 0.3*np.sin(2*np.pi*(x+noise)) + 0.3*np.sin(4*np.pi*(x+noise)) + noise
 X = Var(x)
 Y = Var(y)
 
-x_test = np.linspace(-0.5, 1,TEST_BATCH_SIZE)
+x_test = np.linspace(-0.3, 1,TEST_BATCH_SIZE)
 y_test = x_test + 0.3*np.sin(2*np.pi*x_test) + 0.3*np.sin(4*np.pi*x_test)
 X_test = Var(x_test)
 
@@ -73,6 +73,7 @@ net = BayesianNetwork(inputSize = 1,\
 optimizer = optim.Adam(net.parameters())
 
 for epoch in range(TRAIN_EPOCHS):
+    print('Epoch: ',epoch)
     train(net, optimizer,data=X,target=Y,NUM_BATCHES=NUM_BATCHES)
 
 print('Training Ends!')
@@ -86,7 +87,7 @@ pred_mean = outputs.mean(0).data.cpu().numpy().squeeze(1) #Compute mean predicti
 pred_std = outputs.std(0).data.cpu().numpy().squeeze(1) #Compute standard deviation of prediction for each data point
 
 #Visualization
-plt.scatter(x, y, c='navy', label='target')
+plt.scatter(x, y,marker='x', c='navy', label='target')
 plt.plot(x_test, pred_mean, c='royalblue', label='Prediction')
 plt.fill_between(x_test, pred_mean - 3 * pred_std, pred_mean + 3 * pred_std,
                      color='cornflowerblue', alpha=.5, label='+/- 3 std')
@@ -94,7 +95,7 @@ plt.plot(x_test, y_test, c='grey', label='truth')
 plt.legend()
 plt.tight_layout()
 plt.savefig('./Results/Regression.png')
-plt.show()
+#plt.show()
 
 #Save the trained model
 #torch.save(net.state_dict(), './Models/Regression.pth')

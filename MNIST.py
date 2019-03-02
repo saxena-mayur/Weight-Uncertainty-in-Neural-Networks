@@ -58,7 +58,7 @@ class MNIST(object):
 
     #Define the training step for MNIST data set
     def train(self):
-        self.net.train()
+        #self.net.train()
         for batch_idx, (data, target) in enumerate(self.train_loader):
             data, target = data.to(DEVICE), target.to(DEVICE)
             self.net.zero_grad()
