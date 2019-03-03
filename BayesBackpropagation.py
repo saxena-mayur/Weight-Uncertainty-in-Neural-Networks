@@ -17,8 +17,10 @@ LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if hasGPU else {}
 def log_gaussian_rho(x, mu, logsigma):
     return float(-0.5 * np.log(2. * np.pi)) - logsigma - (x - mu)**2 / (2 * torch.exp(logsigma)**2)
 
+GAUSSIAN_SCALER = 1. / np.sqrt(2.0 * np.pi)
 def gaussian(x, mu, sigma):
-    return  1.0 / np.sqrt(2.0 * np.pi * (sigma ** 2)) * torch.exp(- (x - mu) ** 2 / (2.0 * sigma ** 2))
+    bell = torch.exp(- (x - mu) ** 2 / (2.0 * sigma ** 2))
+    return torch.clamp(GAUSSIAN_SCALER / sigma * bell, 1e-10, 1.)  # clip
   
 def scale_mixture_prior(input, PI, SIGMA_1, SIGMA_2):
     prob1 = PI * gaussian(input, 0., SIGMA_1)
@@ -53,8 +55,8 @@ class BayesianLinear(nn.Module):
             return F.linear(input, self.weight_mu, self.bias_mu)
 
         #Sample weights and bias
-        epsilon_weight = Variable(torch.Tensor(self.out_features, self.in_features).normal_(0., 1.))
-        epsilon_bias = Variable(torch.Tensor(self.out_features).normal_(0., 1.))
+        epsilon_weight = Variable(torch.Tensor(self.out_features, self.in_features).normal_(0., 1.)).to(DEVICE)
+        epsilon_bias = Variable(torch.Tensor(self.out_features).normal_(0., 1.)).to(DEVICE)
         weight  = self.weight_mu + torch.log(1. + torch.exp(self.weight_rho)) * epsilon_weight
         bias = self.bias_mu + torch.log(1. + torch.exp(self.bias_rho)) * epsilon_bias
         

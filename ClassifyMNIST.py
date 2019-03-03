@@ -1,23 +1,23 @@
 from MNIST import *
 import numpy as np
-from tqdm import tqdm, trange
+from tqdm import tqdm
 
 # Multiple epochs
 def multipleEpochAnalyis():
 
     #Hyperparameter declaration
-    BATCH_SIZE = 1000
+    BATCH_SIZE = 125
     TEST_BATCH_SIZE = 1000
     CLASSES = 10
-    TRAIN_EPOCHS = 5
-    SAMPLES = 10
-    TEST_SAMPLES = 10
-    PI = 0.5
-    SIGMA_1 = torch.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.FloatTensor([math.exp(-6)])
-    if torch.cuda.is_available():
-        SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
-        SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
+    TRAIN_EPOCHS = 100
+    SAMPLES = 1
+    TEST_SAMPLES = 1
+    PI = 0.25
+    #SIGMA_1 = torch.FloatTensor([math.exp(-0)])
+    #SIGMA_2 = torch.FloatTensor([math.exp(-6)])
+    #if torch.cuda.is_available():
+    SIGMA_1 = torch.cuda.FloatTensor([0.75]) # torch.cuda.FloatTensor([math.exp(-0)])
+    SIGMA_2 = torch.cuda.FloatTensor([0.1]) # torch.cuda.FloatTensor([math.exp(-6)])
     INPUT_SIZE = 28*28
     LAYERS = np.array([400,400])
 
@@ -36,11 +36,14 @@ def multipleEpochAnalyis():
                 SIGMA_2 = SIGMA_2,\
                 INPUT_SIZE = INPUT_SIZE,\
                 LAYERS = LAYERS,\
-                ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax']))
+                ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax']),
+                LR=1e-3)
 
-    for epoch in tqdm(range(TRAIN_EPOCHS)):
-        mnist.train()
-        errorRate.append(1-mnist.test()) # 1-accuracy
+    for _ in tqdm(range(TRAIN_EPOCHS)):
+        loss = mnist.train()
+        #acc = 1-mnist.test()
+        print(mnist.test(), float(loss))
+        #errorRate.append(acc) # 1-accuracy
 
     errorRate = np.asarray(errorRate)
     np.savetxt('./Results/BBB_epochs_errorRate.csv',errorRate,delimiter=",")

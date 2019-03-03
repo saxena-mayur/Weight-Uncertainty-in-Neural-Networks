@@ -24,7 +24,6 @@ class Config(object):
         self.hidden_units = 400
 
         # Dataset
-        self.mnist_path = './'
         self.batch_size = 125
         self.eval_batch_size = 1000
 

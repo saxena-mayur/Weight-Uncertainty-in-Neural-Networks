@@ -10,11 +10,11 @@ class MNIST(object):
     def __init__(self,BATCH_SIZE,TEST_BATCH_SIZE,CLASSES,TRAIN_EPOCHS,SAMPLES,TEST_SAMPLES,hasScalarMixturePrior,PI,SIGMA_1,SIGMA_2,INPUT_SIZE,LAYERS,ACTIVATION_FUNCTIONS,LR=1e-4,PARSE_SEED=1,MODE='mlp'):
         #Prepare data
         if MODE == 'mlp':
-            train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(2, 'data/', 10000, PARSE_SEED)
-        elif cfg.mode == 'cnn':
-            train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(4, 'data/', 10000, PARSE_SEED)
+            train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(2, 'data/', 10000)
+        elif MODE == 'cnn':
+            train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(4, 'data/', 10000)
         else:
-            raise ValueError('Not supported mode')
+            raise ValueError('Usupported mode')
 
         transform = MNISTTransform()
         train_dataset = MNISTDataset(train_data, train_label, transform=transform)
@@ -58,12 +58,15 @@ class MNIST(object):
 
     #Define the training step for MNIST data set
     def train(self):
-        for batch_idx, (X, y) in enumerate(self.train_loader):      
+        loss = 0.
+        for batch_idx, (input, target) in enumerate(self.train_loader):
+            input, target = input.to(DEVICE), target.to(DEVICE)
             self.net.zero_grad()
-            loss = self.net.BBB_loss(X, y)
+            loss = self.net.BBB_loss(input, target)
             loss.backward()
             self.optimizer.step()
-    
+        return loss
+
     #Testing the ensemble
     def test(self,valid=True):
         data_loader = self.valid_loader if valid else self.test_loader
@@ -72,7 +75,6 @@ class MNIST(object):
             for data, target in data_loader:
                 data, target = data.to(DEVICE), target.to(DEVICE)
                 for b in range(self.TEST_SAMPLES):
-                    #X = Variable(torch.Tensor(data[b * self.TEST_BATCH_SIZE: (b+1) * self.TEST_BATCH_SIZE]))  #.cuda())
                     output = self.net.forward(data, infer=True)
                     pred = output.max(1, keepdim=True)[1]
                     correct += pred.eq(target.view_as(pred)).sum().item()
