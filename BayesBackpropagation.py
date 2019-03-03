@@ -14,9 +14,6 @@ hasGPU = torch.cuda.is_available()
 DEVICE = torch.device("cuda" if hasGPU else "cpu")
 LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if hasGPU else {}
 
-def log_gaussian_rho(x, mu, logsigma):
-    return float(-0.5 * np.log(2. * np.pi)) - logsigma - (x - mu)**2 / (2 * torch.exp(logsigma)**2)
-
 GAUSSIAN_SCALER = 1. / np.sqrt(2.0 * np.pi)
 def gaussian(x, mu, sigma):
     bell = torch.exp(- (x - mu) ** 2 / (2.0 * sigma ** 2))
@@ -54,11 +51,15 @@ class BayesianLinear(nn.Module):
         if infer:
             return F.linear(input, self.weight_mu, self.bias_mu)
 
+        # Obtain positive sigma from logsigma, as in paper
+        weight_sigma = torch.log(1. + torch.exp(self.weight_rho))
+        bias_sigma = torch.log(1. + torch.exp(self.bias_rho))
+
         #Sample weights and bias
         epsilon_weight = Variable(torch.Tensor(self.out_features, self.in_features).normal_(0., 1.)).to(DEVICE)
         epsilon_bias = Variable(torch.Tensor(self.out_features).normal_(0., 1.)).to(DEVICE)
-        weight  = self.weight_mu + torch.log(1. + torch.exp(self.weight_rho)) * epsilon_weight
-        bias = self.bias_mu + torch.log(1. + torch.exp(self.bias_rho)) * epsilon_bias
+        weight  = self.weight_mu + weight_sigma * epsilon_weight
+        bias = self.bias_mu + bias_sigma * epsilon_bias
         
         # Compute posterior and prior probabilities
         if self.hasScalarMixturePrior: #for Scalar mixture vs Gaussian analysis
@@ -66,7 +67,7 @@ class BayesianLinear(nn.Module):
         else:
             self.lpw = torch.log(gaussian(weight,0,self.SIGMA_1).sum() + gaussian(bias,0,self.SIGMA_1).sum())
         
-        self.lqw = log_gaussian_rho(weight, self.weight_mu, self.weight_rho).sum() + log_gaussian_rho(bias, self.bias_mu, self.bias_rho).sum()
+        self.lqw = torch.log(gaussian(weight, self.weight_mu, weight_sigma)).sum() + torch.log(gaussian(bias, self.bias_mu, bias_sigma)).sum()
 
         # Pass sampled weights and bias on to linear layer
         return F.linear(input, weight, bias)
