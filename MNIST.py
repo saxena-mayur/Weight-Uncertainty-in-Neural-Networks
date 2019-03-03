@@ -16,10 +16,9 @@ class MNIST(object):
         else:
             raise ValueError('Usupported mode')
 
-        transform = MNISTTransform()
-        train_dataset = MNISTDataset(train_data, train_label, transform=transform)
-        valid_dataset = MNISTDataset(valid_data, valid_label, transform=transform)
-        test_dataset = MNISTDataset(test_data, test_label, transform=transform)
+        train_dataset = MNISTDataset(train_data, train_label, transform=MNISTTransform())
+        valid_dataset = MNISTDataset(valid_data, valid_label, transform=MNISTTransform())
+        test_dataset = MNISTDataset(test_data, test_label, transform=MNISTTransform())
         self.train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True, **LOADER_KWARGS)
         self.valid_loader = DataLoader(valid_dataset, TEST_BATCH_SIZE, shuffle=False, **LOADER_KWARGS)
         self.test_loader = DataLoader(test_dataset, TEST_BATCH_SIZE, shuffle=False, **LOADER_KWARGS)

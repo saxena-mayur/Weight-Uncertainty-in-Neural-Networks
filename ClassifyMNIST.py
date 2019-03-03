@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 # Multiple epochs
 def multipleEpochAnalyis():
+    torch.manual_seed(0)  # for reproducibility
 
     #Hyperparameter declaration
     BATCH_SIZE = 125
@@ -46,7 +47,7 @@ def multipleEpochAnalyis():
         #errorRate.append(acc) # 1-accuracy
 
     errorRate = np.asarray(errorRate)
-    np.savetxt('./Results/BBB_epochs_errorRate.csv',errorRate,delimiter=",")
+    np.savetxt('./Results/BBB_epochs_errorRate.csv', errorRate, delimiter=",")
     #plt.plot(range(TRAIN_EPOCHS), errorRate, c='royalblue', label='Bayes BackProp')
     #plt.legend()
     #plt.tight_layout()

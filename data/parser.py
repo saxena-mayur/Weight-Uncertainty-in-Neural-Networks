@@ -7,7 +7,7 @@ http://www.cs.nyu.edu/~roweis/data.html
 """
 
 
-def parse_mnist(rank=2, mnist_path='/home/khshim/data/mnist/', num_valid=10000, seed=None):
+def parse_mnist(rank=2, mnist_path='./data/', num_valid=10000, seed=0):
     mnist_file = mnist_path + 'mnist_all.mat'
     mnist = scipy.io.loadmat(mnist_file)
 

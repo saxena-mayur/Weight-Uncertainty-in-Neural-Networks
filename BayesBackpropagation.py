@@ -144,4 +144,5 @@ class BayesianNetwork(nn.Module):
             s_log_likelihood += sample_log_likelihood
                     
         l_pw, l_qw, l_likelihood = s_log_pw/self.SAMPLES, s_log_qw/self.SAMPLES, s_log_likelihood/self.SAMPLES
+
         return (1./(self.NUM_BATCHES)) * (l_qw - l_pw) - l_likelihood
