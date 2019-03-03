@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import math
 
 from torchvision import datasets, transforms
 from torchvision.utils import make_grid
@@ -63,7 +64,7 @@ class BayesianLinear(nn.Module):
         else:
             self.lpw = torch.log(gaussian(weight,0,self.SIGMA_1).sum() + gaussian(bias,0,self.SIGMA_1).sum())
         
-        self.lqw = log_gaussian_rho(weight, self.weight_mu, self.weight_rho).sum() + log_gaussian_logsigma(bias, self.bias_mu, self.bias_rho).sum()
+        self.lqw = log_gaussian_rho(weight, self.weight_mu, self.weight_rho).sum() + log_gaussian_rho(bias, self.bias_mu, self.bias_rho).sum()
 
         # Pass sampled weights and bias on to linear layer
         return F.linear(input, weight, bias)

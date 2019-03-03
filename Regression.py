@@ -58,8 +58,8 @@ print('Training Begins!')
 #Declare Network
 net = BayesianNetwork(inputSize = 1,\
                       CLASSES = CLASSES, \
-                      layers=np.array([100]), \
-                      activations = np.array(['relu','none']), \
+                      layers=np.array([100,100]), \
+                      activations = np.array(['relu','relu','none']), \
                       SAMPLES = SAMPLES, \
                       BATCH_SIZE = BATCH_SIZE,\
                       NUM_BATCHES = NUM_BATCHES,\
