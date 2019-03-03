@@ -2,14 +2,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
-import math
-
-from torchvision import datasets, transforms
-from torchvision.utils import make_grid
 from torch.autograd import Variable
 
-#Checking if gpu is available
+torch.manual_seed(0) # for reproducibility
 hasGPU = torch.cuda.is_available()
 DEVICE = torch.device("cuda" if hasGPU else "cpu")
 LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if hasGPU else {}
@@ -17,8 +12,8 @@ LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if hasGPU else {}
 GAUSSIAN_SCALER = 1. / np.sqrt(2.0 * np.pi)
 def gaussian(x, mu, sigma):
     bell = torch.exp(- (x - mu) ** 2 / (2.0 * sigma ** 2))
-    return torch.clamp(GAUSSIAN_SCALER / sigma * bell, 1e-10, 1.)  # clip
-  
+    return torch.clamp(GAUSSIAN_SCALER / sigma * bell, 1e-10, 1.)  # clip to avoid numerical issues
+
 def scale_mixture_prior(input, PI, SIGMA_1, SIGMA_2):
     prob1 = PI * gaussian(input, 0., SIGMA_1)
     prob2 = (1.-PI) * gaussian(input, 0., SIGMA_2)
@@ -32,12 +27,12 @@ class BayesianLinear(nn.Module):
         self.out_features = out_features
 
          # Initialise weights and bias
-        self.weight_mu = nn.Parameter(torch.Tensor(out_features, in_features).normal_(0., .1))
-        self.weight_rho = nn.Parameter(torch.Tensor(out_features, in_features).uniform_(-3.,-3.))
+        self.weight_mu = nn.Parameter(torch.Tensor(out_features, in_features).normal_(0., .1)) # or .01
+        self.weight_rho = nn.Parameter(torch.Tensor(out_features, in_features).uniform_(-3.,-3.)) # or -4
         self.bias_mu = nn.Parameter(torch.Tensor(out_features).normal_(0., .1))
         self.bias_rho = nn.Parameter(torch.Tensor(out_features).uniform_(-3.,-3.))
        
-        # Initiliase prior and posterior
+        # Initialise prior and posterior
         self.lpw = 0.
         self.lqw = 0.
 
@@ -121,16 +116,16 @@ class BayesianNetwork(nn.Module):
         return x
     
     def get_lpw_lqw(self):
-        log_prior = 0.
-        log_variational_posterior = 0.
+        lpw = 0.
+        lpq = 0.
 
         for i in range(self.DEPTH):
-            log_prior += self.layers[i].lpw
-            log_variational_posterior += self.layers[i].lqw
-        return log_prior,log_variational_posterior
+            lpw += self.layers[i].lpw
+            lpq += self.layers[i].lqw
+        return lpw, lpq
     
     def BBB_loss(self,input, target):
-        
+
         s_log_pw, s_log_qw, s_log_likelihood, sample_log_likelihood = 0., 0., 0., 0.
         for _ in range(self.SAMPLES):
             output = self.forward(input)        

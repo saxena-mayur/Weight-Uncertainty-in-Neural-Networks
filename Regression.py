@@ -1,3 +1,5 @@
+import math
+import torch.optim as optim
 from BayesBackpropagation import *
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
@@ -22,11 +24,8 @@ NUM_BATCHES = 20
 TEST_BATCH_SIZE = 100
 CLASSES = 1
 PI = 0.5
-SIGMA_1 = torch.FloatTensor([math.exp(-0)])
-SIGMA_2 = torch.FloatTensor([math.exp(-6)])
-if torch.cuda.is_available():
-    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
+SIGMA_1 = torch.FloatTensor([math.exp(-0)]).to(DEVICE)
+SIGMA_2 = torch.FloatTensor([math.exp(-6)]).to(DEVICE)
 
 print('Generating Data set.')
 
@@ -73,7 +72,7 @@ net = BayesianNetwork(inputSize = 1,\
 optimizer = optim.Adam(net.parameters())
 
 for epoch in range(TRAIN_EPOCHS):
-    print('Epoch: ',epoch)
+    print('Epoch: ', epoch + 1)
     train(net, optimizer,data=X,target=Y,NUM_BATCHES=NUM_BATCHES)
 
 print('Training Ends!')

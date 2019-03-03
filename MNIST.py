@@ -6,8 +6,10 @@ from data.parser import parse_mnist
 from data.dataset import MNISTDataset
 from data.transforms import MNISTTransform
 
+import torch.optim as optim
+
 class MNIST(object):
-    def __init__(self,BATCH_SIZE,TEST_BATCH_SIZE,CLASSES,TRAIN_EPOCHS,SAMPLES,TEST_SAMPLES,hasScalarMixturePrior,PI,SIGMA_1,SIGMA_2,INPUT_SIZE,LAYERS,ACTIVATION_FUNCTIONS,LR=1e-4,PARSE_SEED=1,MODE='mlp'):
+    def __init__(self,BATCH_SIZE,TEST_BATCH_SIZE,CLASSES,TRAIN_EPOCHS,SAMPLES,hasScalarMixturePrior,PI,SIGMA_1,SIGMA_2,INPUT_SIZE,LAYERS,ACTIVATION_FUNCTIONS,LR=1e-4,MODE='mlp'):
         #Prepare data
         if MODE == 'mlp':
             train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(2, 'data/', 10000)
@@ -33,7 +35,6 @@ class MNIST(object):
         self.CLASSES = CLASSES
         self.TRAIN_EPOCHS = TRAIN_EPOCHS
         self.SAMPLES = SAMPLES
-        self.TEST_SAMPLES = TEST_SAMPLES
 
         #Checking if the mentioned batch sizes are feasible
         assert (self.TRAIN_SIZE % BATCH_SIZE) == 0
@@ -71,13 +72,12 @@ class MNIST(object):
         data_loader = self.valid_loader if valid else self.test_loader
         correct = 0
         with torch.no_grad():
-            for data, target in data_loader:
-                data, target = data.to(DEVICE), target.to(DEVICE)
-                for b in range(self.TEST_SAMPLES):
-                    output = self.net.forward(data, infer=True)
-                    pred = output.max(1, keepdim=True)[1]
-                    correct += pred.eq(target.view_as(pred)).sum().item()
+            for input, target in data_loader:
+                input, target = input.to(DEVICE), target.to(DEVICE)
+                output = self.net.forward(input, infer=True)
+                pred = output.max(1, keepdim=True)[1]
+                correct += pred.eq(target.view_as(pred)).sum().item()
         
         accuracy = correct/self.TEST_SIZE
         
-        return round(100*(1 - accuracy), 3)#Error
+        return round(100*(1 - accuracy), 3) #Error

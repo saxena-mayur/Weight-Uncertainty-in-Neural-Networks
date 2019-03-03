@@ -19,8 +19,8 @@ class Config(object):
     def __init__(self):
 
         self.mode = 'dropout'  # 'dropout' or 'mlp'
-        self.parse_seed = 1
-        self.torch_seed = 1
+        self.parse_seed = 0
+        self.torch_seed = 0
 
         self.mnist_path = 'data/'
         self.num_valid = 10000

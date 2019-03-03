@@ -10,4 +10,4 @@ do
 	CUDA_VISIBLE_DEVICES=0 python3 SGD.py $P $I $1 > results/log_$P\_$I.txt
 done
 done
-watch nvidia-smi
+#watch nvidia-smi

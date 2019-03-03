@@ -7,7 +7,7 @@ http://www.cs.nyu.edu/~roweis/data.html
 """
 
 
-def parse_mnist(rank=2, mnist_path='./data/', num_valid=10000, seed=0):
+def parse_mnist(rank=2, mnist_path='data/', n_valid=10000, seed=0):
     mnist_file = mnist_path + 'mnist_all.mat'
     mnist = scipy.io.loadmat(mnist_file)
 
@@ -49,9 +49,9 @@ def parse_mnist(rank=2, mnist_path='./data/', num_valid=10000, seed=0):
 
     train_data = train_data[order]
     train_label = train_label[order]
-    valid_data = train_data[:num_valid]
-    valid_label = train_label[:num_valid]
-    train_data = train_data[num_valid:]
-    train_label = train_label[num_valid:]
+    valid_data = train_data[:n_valid]
+    valid_label = train_label[:n_valid]
+    train_data = train_data[n_valid:]
+    train_label = train_label[n_valid:]
 
     return train_data, train_label, valid_data, valid_label, test_data, test_label

@@ -1,24 +1,21 @@
 from MNIST import *
 import numpy as np
 from tqdm import tqdm
+import math
 
 # Multiple epochs
 def multipleEpochAnalyis():
-    torch.manual_seed(0)  # for reproducibility
-
     #Hyperparameter declaration
     BATCH_SIZE = 125
     TEST_BATCH_SIZE = 1000
     CLASSES = 10
     TRAIN_EPOCHS = 100
-    SAMPLES = 1
-    TEST_SAMPLES = 1
+    SAMPLES = 2
     PI = 0.25
-    #SIGMA_1 = torch.FloatTensor([math.exp(-0)])
-    #SIGMA_2 = torch.FloatTensor([math.exp(-6)])
-    #if torch.cuda.is_available():
-    SIGMA_1 = torch.cuda.FloatTensor([0.75]) # torch.cuda.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.cuda.FloatTensor([0.1]) # torch.cuda.FloatTensor([math.exp(-6)])
+    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
+    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
+    #SIGMA_1 = torch.cuda.FloatTensor([0.75])
+    #SIGMA_2 = torch.cuda.FloatTensor([0.1])
     INPUT_SIZE = 28*28
     LAYERS = np.array([400,400])
 
@@ -30,7 +27,6 @@ def multipleEpochAnalyis():
                 CLASSES = CLASSES,\
                 TRAIN_EPOCHS = TRAIN_EPOCHS,\
                 SAMPLES = SAMPLES,\
-                TEST_SAMPLES = TEST_SAMPLES,\
                 hasScalarMixturePrior = True,\
                 PI = PI,\
                 SIGMA_1 = SIGMA_1,\
@@ -42,9 +38,9 @@ def multipleEpochAnalyis():
 
     for _ in tqdm(range(TRAIN_EPOCHS)):
         loss = mnist.train()
-        #acc = 1-mnist.test()
-        print(mnist.test(), float(loss))
-        #errorRate.append(acc) # 1-accuracy
+        err = mnist.test()
+        print(err, float(loss))
+        errorRate.append(err)
 
     errorRate = np.asarray(errorRate)
     np.savetxt('./Results/BBB_epochs_errorRate.csv', errorRate, delimiter=",")
@@ -63,7 +59,6 @@ def MixtureVsGaussianAnalyis():
     CLASSES = 10
     SAMPLES = 2
     TRAIN_EPOCHS = 600
-    TEST_SAMPLES = 10
     PI = 0.5
     SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
     SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
@@ -81,7 +76,6 @@ def MixtureVsGaussianAnalyis():
                 CLASSES = CLASSES,\
                 TRAIN_EPOCHS = TRAIN_EPOCHS,\
                 SAMPLES = SAMPLES,\
-                TEST_SAMPLES = TEST_SAMPLES,\
                 hasScalarMixturePrior = True,\
                 PI = PI,\
                 SIGMA_1 = SIGMA_1,\
@@ -96,7 +90,6 @@ def MixtureVsGaussianAnalyis():
                     CLASSES = CLASSES,\
                     TRAIN_EPOCHS = TRAIN_EPOCHS,\
                     SAMPLES = SAMPLES,\
-                    TEST_SAMPLES = TEST_SAMPLES,\
                     hasScalarMixturePrior = False,\
                     PI = PI,\
                     SIGMA_1 = SIGMA_1,\
@@ -105,7 +98,7 @@ def MixtureVsGaussianAnalyis():
                     LAYERS = layer,\
                     ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax']))
         
-        for epoch in tqdm(range(TRAIN_EPOCHS)):
+        for _ in tqdm(range(TRAIN_EPOCHS)):
             mnist.train()
             mnistGaussian.train()
         print("Testing begins!")
@@ -123,7 +116,6 @@ def HyperparameterAnalysis():
     CLASSES = 10
     TRAIN_EPOCHS = 100
     SAMPLES = np.array([1,2,5,10]) #possible values of sample size
-    TEST_SAMPLES = 10
     PI = np.array([0.25,0.5,0.75]) #possible values of pi
     SIGMA_1 = np.array([0,1,2]) #possible values of sigma1 
     SIGMA_2 = np.array([6,7,8]) #possible values of sigma2
@@ -143,7 +135,6 @@ def HyperparameterAnalysis():
                                     CLASSES = CLASSES,\
                                     TRAIN_EPOCHS = TRAIN_EPOCHS,\
                                     SAMPLES = SAMPLES[sample],\
-                                    TEST_SAMPLES = TEST_SAMPLES,\
                                     hasScalarMixturePrior = True,\
                                     PI = PI[pi],\
                                     SIGMA_1 = torch.cuda.FloatTensor([math.exp(-SIGMA_1[sigma1])]),\
@@ -155,14 +146,13 @@ def HyperparameterAnalysis():
 
                         print(SAMPLES[sample],PI[pi],SIGMA_1[sigma1],SIGMA_2[sigma2],LR[lr])
 
-                        for epoch in tqdm(range(TRAIN_EPOCHS)):
+                        for _ in tqdm(range(TRAIN_EPOCHS)):
                             mnist.train()
                         
-                        errorRate.append([SAMPLES[sample],PI[pi],SIGMA_1[sigma1],SIGMA_2[sigma2],LR[lr],1-mnist.test()])
+                        errorRate.append([SAMPLES[sample],PI[pi],SIGMA_1[sigma1],SIGMA_2[sigma2],LR[lr],mnist.test()])
+                        errorRate = np.asarray(errorRate)
+                        np.savetxt('./Results/BBB_hyperparameters.csv', errorRate, delimiter=",")
 
-    errorRate = np.asarray(errorRate)
-    np.savetxt('./Results/BBB_hyperparameters.csv',errorRate,delimiter=",")
-
-multipleEpochAnalyis()
+#multipleEpochAnalyis()
 #MixtureVsGaussianAnalyis()
-#HyperparameterAnalysis()
+HyperparameterAnalysis()
