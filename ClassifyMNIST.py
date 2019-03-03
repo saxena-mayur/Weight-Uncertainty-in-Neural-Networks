@@ -6,10 +6,10 @@ from tqdm import tqdm, trange
 def multipleEpochAnalyis():
 
     #Hyperparameter declaration
-    BATCH_SIZE = 100
+    BATCH_SIZE = 1000
     TEST_BATCH_SIZE = 1000
     CLASSES = 10
-    TRAIN_EPOCHS = 600
+    TRAIN_EPOCHS = 5
     SAMPLES = 10
     TEST_SAMPLES = 10
     PI = 0.5

@@ -9,7 +9,7 @@ def train(net, optimizer, data, target, NUM_BATCHES):
         net.zero_grad()
         x = data[i].reshape((-1, 1))
         y = target[i].reshape((-1,1))
-        loss, log_prior, log_variational_posterior, negative_log_likelihood = net.sample_elbo(x,y)
+        loss = net.BBB_loss(x, y)
         loss.backward()
         optimizer.step()
 

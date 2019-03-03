@@ -58,31 +58,25 @@ class MNIST(object):
 
     #Define the training step for MNIST data set
     def train(self):
-        #self.net.train()
-        for batch_idx, (data, target) in enumerate(self.train_loader):
-            data, target = data.to(DEVICE), target.to(DEVICE)
+        for batch_idx, (X, y) in enumerate(self.train_loader):      
             self.net.zero_grad()
-            loss, log_prior, log_variational_posterior, negative_log_likelihood = self.net.sample_elbo(data, target)
+            loss = self.net.BBB_loss(X, y)
             loss.backward()
             self.optimizer.step()
     
     #Testing the ensemble
     def test(self,valid=True):
         data_loader = self.valid_loader if valid else self.test_loader
-        self.net.eval()
         correct = 0
-        corrects = np.zeros(self.TEST_SAMPLES+1, dtype=int)
         with torch.no_grad():
             for data, target in data_loader:
-                data, target = data.to(DEVICE), target.to(DEVICE) # Load data to cpu/gpu
-                outputs = torch.zeros(self.TEST_SAMPLES+1, self.TEST_BATCH_SIZE, self.CLASSES).to(DEVICE)
-                for i in range(self.TEST_SAMPLES): #testing over ensemble
-                    outputs[i] = self.net(data, sample=True)
-                outputs[self.TEST_SAMPLES] = self.net(data, sample=False)
-                output = outputs.mean(0)
-                preds = preds = outputs.max(2, keepdim=True)[1]
-                pred = output.max(1, keepdim=True)[1] # index of max log-probability
-                corrects += preds.eq(target.view_as(pred)).sum(dim=1).squeeze().cpu().numpy()
-                correct += pred.eq(target.view_as(pred)).sum().item()
-        print('Ensemble accuracy = ',correct/self.TEST_SIZE)
-        return correct/self.TEST_SIZE #Accuracy
+                data, target = data.to(DEVICE), target.to(DEVICE)
+                for b in range(self.TEST_SAMPLES):
+                    #X = Variable(torch.Tensor(data[b * self.TEST_BATCH_SIZE: (b+1) * self.TEST_BATCH_SIZE]))  #.cuda())
+                    output = self.net.forward(data, infer=True)
+                    pred = output.max(1, keepdim=True)[1]
+                    correct += pred.eq(target.view_as(pred)).sum().item()
+        
+        accuracy = correct/self.TEST_SIZE
+        
+        return round(100*(1 - accuracy), 3)#Error
