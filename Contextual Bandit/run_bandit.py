@@ -1,25 +1,20 @@
 # Import Libraries
 
 import math
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import os
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from sklearn import preprocessing
-from sklearn import metrics
-import random
+from tqdm import tqdm
 
 import sys
 sys.path.append('../')
 from BayesBackpropagation import *
 
+#### CUDA NOT YET IMPLEMENTED - DISABLE IN BayesBackpropagation.py ###
+
 NB_STEPS = int(sys.argv[1])
 print('running for {0} steps'.format(NB_STEPS))
-
 
 # Import data from file
 df = pd.read_csv(os.getcwd() + '/agaricus-lepiota.data', sep=',', header=None,
@@ -63,7 +58,7 @@ def get_reward(eaten, edible):
     if eaten and edible:
         return 5
     elif eaten and not edible:
-        return (5 if np.random.rand() > 0.5 else -35)
+        return 5 if np.random.rand() > 0.5 else -35
 
 def oracle_reward(edible):
     return 5*edible    
@@ -77,20 +72,11 @@ def init_buffer():
     return bufferX, bufferY
 
 # Define some hyperparameters
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-print("Cuda available?: ",torch.cuda.is_available())
-
-PI = 0.5
+PI = 0.25
 SIGMA_1 = torch.FloatTensor([math.exp(-0)])
 SIGMA_2 = torch.FloatTensor([math.exp(-6)])
 
-import torch.nn as nn
-import torch.nn.functional as F
-import sys
-
 Var = lambda x, dtype=torch.FloatTensor: Variable(torch.from_numpy(x).type(dtype))
-
 
 class MushroomNet():
     def __init__(self, label='MushNet'):
@@ -141,14 +127,19 @@ class BBB_MNet(MushroomNet):
                           activations = np.array(['relu','relu','none']), 
                           SAMPLES = 1, 
                           BATCH_SIZE = 64,
-                          NUM_BATCHES = 64).to(DEVICE)
+                          NUM_BATCHES = 64,
+                          hasScalarMixturePrior=True,
+                          PI=PI,
+                          SIGMA_1 = SIGMA_1,
+                          SIGMA_2 = SIGMA_2
+                          ).to(DEVICE)
         self.optimizer = optim.Adam(self.net.parameters())
-        self.loss = lambda data, target:self.net.sample_elbo(data, target)[0]
+        self.loss = lambda data, target:self.net.BBB_loss(data, target)
         
         
 
 class EpsGreedyMlp(MushroomNet):
-    def __init__(self, label, epsilon=0):
+    def __init__(self, label, epsilon=0.):
         super().__init__(label)
         self.epsilon = epsilon
         self.net = nn.Sequential(
@@ -161,9 +152,9 @@ class EpsGreedyMlp(MushroomNet):
         self.loss = lambda data, target: self.mse(self.net.forward(data), target)
 
 mushroom_nets = {'bbb':BBB_MNet(label = 'Bayes By BackProp'),
-                 'e0':EpsGreedyMlp(epsilon=0, label = 'Greedy'),
-                 'e1':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy'),
-                 'e5':EpsGreedyMlp(epsilon=0.05, label = '5 %Greedy')}
+                 'e0':EpsGreedyMlp(epsilon = 0., label = 'Greedy'),
+                 'e1':EpsGreedyMlp(epsilon = 0.01, label = '1% Greedy'),
+                 'e5':EpsGreedyMlp(epsilon = 0.05, label = '5 %Greedy')}
 
 
 for _ in tqdm(range(NB_STEPS)):
