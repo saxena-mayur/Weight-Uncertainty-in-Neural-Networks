@@ -1,15 +1,13 @@
-from tqdm import tqdm
 import math
 
-from BayesBackpropagation import *
-
-from torch.utils.data.dataloader import DataLoader
-
-from data.parser import parse_mnist
-from data.dataset import MNISTDataset
-from data.transforms import MNISTTransform
-
 import torch.optim as optim
+from torch.utils.data.dataloader import DataLoader
+from tqdm import tqdm
+
+from BayesBackpropagation import *
+from data.dataset import MNISTDataset
+from data.parser import parse_mnist
+from data.transforms import MNISTTransform
 
 
 class MNIST(object):
@@ -87,37 +85,36 @@ class MNIST(object):
 
         return round(100 * (1 - accuracy), 3)  # Error
 
+
 # Multiple epochs
 def multipleEpochAnalyis():
-    #Hyperparameter declaration
+    # Hyperparameter declaration
     BATCH_SIZE = 125
     TEST_BATCH_SIZE = 1000
     CLASSES = 10
     TRAIN_EPOCHS = 100
-    SAMPLES = 2
+    SAMPLES = 1
     PI = 0.25
-    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
-    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
-    #SIGMA_1 = torch.cuda.FloatTensor([0.75])
-    #SIGMA_2 = torch.cuda.FloatTensor([0.1])
-    INPUT_SIZE = 28*28
-    LAYERS = np.array([400,400])
+    SIGMA_1 = torch.cuda.FloatTensor([0.75])
+    SIGMA_2 = torch.cuda.FloatTensor([0.1])
+    INPUT_SIZE = 28 * 28
+    LAYERS = np.array([400, 400])
 
-    errorRate = [] #to store error rates at different epochs
+    errorRate = []  # to store error rates at different epochs
 
-    mnist = MNIST(BATCH_SIZE = BATCH_SIZE,\
-                TEST_BATCH_SIZE = TEST_BATCH_SIZE,\
-                CLASSES = CLASSES,\
-                TRAIN_EPOCHS = TRAIN_EPOCHS,\
-                SAMPLES = SAMPLES,\
-                hasScalarMixturePrior = True,\
-                PI = PI,\
-                SIGMA_1 = SIGMA_1,\
-                SIGMA_2 = SIGMA_2,\
-                INPUT_SIZE = INPUT_SIZE,\
-                LAYERS = LAYERS,\
-                ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax']),
-                LR=1e-3)
+    mnist = MNIST(BATCH_SIZE=BATCH_SIZE, \
+                  TEST_BATCH_SIZE=TEST_BATCH_SIZE, \
+                  CLASSES=CLASSES, \
+                  TRAIN_EPOCHS=TRAIN_EPOCHS, \
+                  SAMPLES=SAMPLES, \
+                  hasScalarMixturePrior=True, \
+                  PI=PI, \
+                  SIGMA_1=SIGMA_1, \
+                  SIGMA_2=SIGMA_2, \
+                  INPUT_SIZE=INPUT_SIZE, \
+                  LAYERS=LAYERS, \
+                  ACTIVATION_FUNCTIONS=np.array(['relu', 'relu', 'softmax']),
+                  LR=1e-3)
 
     for _ in tqdm(range(TRAIN_EPOCHS)):
         loss = mnist.train()
@@ -127,16 +124,16 @@ def multipleEpochAnalyis():
 
     errorRate = np.asarray(errorRate)
     np.savetxt('./Results/BBB_epochs_errorRate.csv', errorRate, delimiter=",")
-    #plt.plot(range(TRAIN_EPOCHS), errorRate, c='royalblue', label='Bayes BackProp')
-    #plt.legend()
-    #plt.tight_layout()
-    #plt.savefig('./Results/MNIST_EPOCHS.png')
-    #torch.save(mnist.net.state_dict(), './Models/BBB_MNIST.pth')
+    # plt.plot(range(TRAIN_EPOCHS), errorRate, c='royalblue', label='Bayes BackProp')
+    # plt.legend()
+    # plt.tight_layout()
+    # plt.savefig('./Results/MNIST_EPOCHS.png')
+    # torch.save(mnist.net.state_dict(), './Models/BBB_MNIST.pth')
+
 
 # Scalar Mixture vs Gaussian
 def MixtureVsGaussianAnalyis():
-
-    #Hyperparameter setting
+    # Hyperparameter setting
     BATCH_SIZE = 125
     TEST_BATCH_SIZE = 1000
     CLASSES = 10
@@ -145,65 +142,65 @@ def MixtureVsGaussianAnalyis():
     PI = 0.5
     SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0)])
     SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
-    INPUT_SIZE = 28*28
-    LAYERS = np.array([[400,400],[800,800],[1200,1200]]) #Possible layer configuration
+    INPUT_SIZE = 28 * 28
+    LAYERS = np.array([[400, 400], [800, 800], [1200, 1200]])  # Possible layer configuration
     reading = []
 
     for l in range(LAYERS.shape[0]):
         layer = np.asarray(LAYERS[l])
-        print("Network architecture: ",layer)
+        print("Network architecture: ", layer)
 
-        #one with scalar mixture gaussian prior
-        mnist = MNIST(BATCH_SIZE = BATCH_SIZE,\
-                TEST_BATCH_SIZE = TEST_BATCH_SIZE,\
-                CLASSES = CLASSES,\
-                TRAIN_EPOCHS = TRAIN_EPOCHS,\
-                SAMPLES = SAMPLES,\
-                hasScalarMixturePrior = True,\
-                PI = PI,\
-                SIGMA_1 = SIGMA_1,\
-                SIGMA_2 = SIGMA_2,\
-                INPUT_SIZE = INPUT_SIZE,\
-                LAYERS = layer,\
-                ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax']))
+        # one with scalar mixture gaussian prior
+        mnist = MNIST(BATCH_SIZE=BATCH_SIZE, \
+                      TEST_BATCH_SIZE=TEST_BATCH_SIZE, \
+                      CLASSES=CLASSES, \
+                      TRAIN_EPOCHS=TRAIN_EPOCHS, \
+                      SAMPLES=SAMPLES, \
+                      hasScalarMixturePrior=True, \
+                      PI=PI, \
+                      SIGMA_1=SIGMA_1, \
+                      SIGMA_2=SIGMA_2, \
+                      INPUT_SIZE=INPUT_SIZE, \
+                      LAYERS=layer, \
+                      ACTIVATION_FUNCTIONS=np.array(['relu', 'relu', 'softmax']))
 
-        #one with simple gaussian prior
-        mnistGaussian = MNIST(BATCH_SIZE = BATCH_SIZE,\
-                    TEST_BATCH_SIZE = TEST_BATCH_SIZE,\
-                    CLASSES = CLASSES,\
-                    TRAIN_EPOCHS = TRAIN_EPOCHS,\
-                    SAMPLES = SAMPLES,\
-                    hasScalarMixturePrior = False,\
-                    PI = PI,\
-                    SIGMA_1 = SIGMA_1,\
-                    SIGMA_2 = SIGMA_2,\
-                    INPUT_SIZE = INPUT_SIZE,\
-                    LAYERS = layer,\
-                    ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax']))
-        
+        # one with simple gaussian prior
+        mnistGaussian = MNIST(BATCH_SIZE=BATCH_SIZE, \
+                              TEST_BATCH_SIZE=TEST_BATCH_SIZE, \
+                              CLASSES=CLASSES, \
+                              TRAIN_EPOCHS=TRAIN_EPOCHS, \
+                              SAMPLES=SAMPLES, \
+                              hasScalarMixturePrior=False, \
+                              PI=PI, \
+                              SIGMA_1=SIGMA_1, \
+                              SIGMA_2=SIGMA_2, \
+                              INPUT_SIZE=INPUT_SIZE, \
+                              LAYERS=layer, \
+                              ACTIVATION_FUNCTIONS=np.array(['relu', 'relu', 'softmax']))
+
         for _ in tqdm(range(TRAIN_EPOCHS)):
             mnist.train()
             mnistGaussian.train()
         print("Testing begins!")
-        reading.append([layer[0],mnist.test(),mnistGaussian.test()])
-    
+        reading.append([layer[0], mnist.test(), mnistGaussian.test()])
+
     reading = np.asarray(reading)
-    np.savetxt('./Results/BBB_scalarVsGaussian.csv',reading,delimiter=",")
+    np.savetxt('./Results/BBB_scalarVsGaussian.csv', reading, delimiter=",")
+
 
 # Different values of sample, pi, sigma 1 and sigma 2
 def HyperparameterAnalysis():
-    
-    #hyper parameter declaration
+    # hyper parameter declaration
     BATCH_SIZE = 1000
     TEST_BATCH_SIZE = 1000
     CLASSES = 10
     TRAIN_EPOCHS = 100
-    SAMPLES = np.array([1,2,5,10]) #possible values of sample size
-    PI = np.array([0.25,0.5,0.75]) #possible values of pi
-    SIGMA_1 = np.array([0,1,2]) #possible values of sigma1 
-    SIGMA_2 = np.array([6,7,8]) #possible values of sigma2
-    INPUT_SIZE = 28*28
-    LAYERS = np.array([400,400])
+    SAMPLES = np.array([1, 2, 5, 10])  # possible values of sample size
+    PI = np.array([0.25, 0.5, 0.75])  # possible values of pi
+    SIGMA_1 = np.array([0, 1, 2])  # possible values of sigma1
+    SIGMA_2 = np.array([6, 7, 8])  # possible values of sigma2
+    INPUT_SIZE = 28 * 28
+    LAYERS = np.array([400, 400])
     LR = [1e-4, 1e-2, 1e-3, 1e-5]
 
     errorRate = []
@@ -213,30 +210,32 @@ def HyperparameterAnalysis():
                 for sigma2 in range(SIGMA_2.size):
                     for lr in range(len(LR)):
 
-                        mnist = MNIST(BATCH_SIZE = BATCH_SIZE,\
-                                    TEST_BATCH_SIZE = TEST_BATCH_SIZE,\
-                                    CLASSES = CLASSES,\
-                                    TRAIN_EPOCHS = TRAIN_EPOCHS,\
-                                    SAMPLES = SAMPLES[sample],\
-                                    hasScalarMixturePrior = True,\
-                                    PI = PI[pi],\
-                                    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-SIGMA_1[sigma1])]),\
-                                    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-SIGMA_2[sigma2])]),\
-                                    INPUT_SIZE = INPUT_SIZE,\
-                                    LAYERS = LAYERS,\
-                                    ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax']),\
-                                    LR = LR[lr])
+                        mnist = MNIST(BATCH_SIZE=BATCH_SIZE, \
+                                      TEST_BATCH_SIZE=TEST_BATCH_SIZE, \
+                                      CLASSES=CLASSES, \
+                                      TRAIN_EPOCHS=TRAIN_EPOCHS, \
+                                      SAMPLES=SAMPLES[sample], \
+                                      hasScalarMixturePrior=True, \
+                                      PI=PI[pi], \
+                                      SIGMA_1=torch.cuda.FloatTensor([math.exp(-SIGMA_1[sigma1])]), \
+                                      SIGMA_2=torch.cuda.FloatTensor([math.exp(-SIGMA_2[sigma2])]), \
+                                      INPUT_SIZE=INPUT_SIZE, \
+                                      LAYERS=LAYERS, \
+                                      ACTIVATION_FUNCTIONS=np.array(['relu', 'relu', 'softmax']), \
+                                      LR=LR[lr])
 
-                        print(SAMPLES[sample],PI[pi],SIGMA_1[sigma1],SIGMA_2[sigma2],LR[lr])
+                        print(SAMPLES[sample], PI[pi], SIGMA_1[sigma1], SIGMA_2[sigma2], LR[lr])
 
                         for _ in tqdm(range(TRAIN_EPOCHS)):
                             mnist.train()
-                        
-                        errorRate.append([SAMPLES[sample],PI[pi],SIGMA_1[sigma1],SIGMA_2[sigma2],LR[lr],mnist.test()])
+
+                        errorRate.append(
+                            [SAMPLES[sample], PI[pi], SIGMA_1[sigma1], SIGMA_2[sigma2], LR[lr], mnist.test()])
                         errorRate = np.asarray(errorRate)
                         np.savetxt('./Results/BBB_hyperparameters.csv', errorRate, delimiter=",")
 
+
 if __name__ == '__main__':
     multipleEpochAnalyis()
-    #MixtureVsGaussianAnalyis()
-    #HyperparameterAnalysis()
+    # MixtureVsGaussianAnalyis()
+    # HyperparameterAnalysis()
