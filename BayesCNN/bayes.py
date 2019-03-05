@@ -46,8 +46,8 @@ class BayesLayer(nn.Module):
         
         self.kl = (-.5*torch.log(np.pi*np.e*weight_sigma.pow(2)).sum()
                    -.5*torch.log(np.pi*np.e*bias_sigma.pow(2)).sum() 
-                   + self.log_prior(weight) 
-                   + self.log_prior(bias))
+                   - self.log_prior(weight) 
+                   - self.log_prior(bias))
         return weight, bias
     
     def forward(self, input, noise = True):
