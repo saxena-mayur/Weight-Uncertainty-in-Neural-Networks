@@ -243,6 +243,6 @@ def HyperparameterAnalysis():
 
 
 if __name__ == '__main__':
-    # multipleEpochAnalyis()
+    multipleEpochAnalyis()
     # MixtureVsGaussianAnalyis()
-    HyperparameterAnalysis()
+    #HyperparameterAnalysis()

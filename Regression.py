@@ -18,10 +18,10 @@ def train(net, optimizer, data, target, NUM_BATCHES):
 #Hyperparameter setting
 TRAIN_EPOCHS = 500
 SAMPLES = 10
-TEST_SAMPLES = 10
-BATCH_SIZE = 200
-NUM_BATCHES = 20
-TEST_BATCH_SIZE = 100
+TEST_SAMPLES = 5
+BATCH_SIZE = 100
+NUM_BATCHES = 10
+TEST_BATCH_SIZE = 150
 CLASSES = 1
 PI = 0.5
 SIGMA_1 = torch.FloatTensor([math.exp(-0)]).to(DEVICE)
@@ -35,13 +35,13 @@ if torch.cuda.is_available():
 else:
     Var = lambda x, dtype=torch.FloatTensor: Variable(torch.from_numpy(x).type(dtype)) #converting data to tensor
 
-x = np.random.uniform(-0.1, 0.6, size=(NUM_BATCHES,BATCH_SIZE))
+x = np.random.uniform(-0.1, 0.61, size=(NUM_BATCHES,BATCH_SIZE))
 noise = np.random.normal(0, 0.02, size=(NUM_BATCHES,BATCH_SIZE)) #metric as mentioned in the paper
 y = x + 0.3*np.sin(2*np.pi*(x+noise)) + 0.3*np.sin(4*np.pi*(x+noise)) + noise
 X = Var(x)
 Y = Var(y)
 
-x_test = np.linspace(-0.3, 1,TEST_BATCH_SIZE)
+x_test = np.linspace(-0.5, 1,TEST_BATCH_SIZE)
 y_test = x_test + 0.3*np.sin(2*np.pi*x_test) + 0.3*np.sin(4*np.pi*x_test)
 X_test = Var(x_test)
 
@@ -57,8 +57,8 @@ print('Training Begins!')
 #Declare Network
 net = BayesianNetwork(inputSize = 1,\
                       CLASSES = CLASSES, \
-                      layers=np.array([100,100]), \
-                      activations = np.array(['relu','relu','none']), \
+                      layers=np.array([16,16,16]), \
+                      activations = np.array(['relu','relu','relu','none']), \
                       SAMPLES = SAMPLES, \
                       BATCH_SIZE = BATCH_SIZE,\
                       NUM_BATCHES = NUM_BATCHES,\
@@ -68,11 +68,12 @@ net = BayesianNetwork(inputSize = 1,\
                       SIGMA_2 = SIGMA_2).to(DEVICE)
 
 #Declare the optimizer
-#optimizer = optim.SGD(net.parameters(),lr=1e-4,momentum=0.9) #
-optimizer = optim.Adam(net.parameters())
+optimizer = optim.SGD(net.parameters(),lr=1e-3,momentum=0.9) #
+#optimizer = optim.Adam(net.parameters())
 
 for epoch in range(TRAIN_EPOCHS):
-    print('Epoch: ', epoch + 1)
+    if (epoch)%10 == 0:
+        print('Epoch: ', epoch)
     train(net, optimizer,data=X,target=Y,NUM_BATCHES=NUM_BATCHES)
 
 print('Training Ends!')
