@@ -92,13 +92,14 @@ def multipleEpochAnalyis():
     BATCH_SIZE = 125
     TEST_BATCH_SIZE = 1000
     CLASSES = 10
-    TRAIN_EPOCHS = 100
+    TRAIN_EPOCHS = 600
     SAMPLES = 1
-    PI = 0.25
-    SIGMA_1 = torch.cuda.FloatTensor([0.75])
-    SIGMA_2 = torch.cuda.FloatTensor([0.1])
+    PI = 0.75
+    SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0.)]) # torch.cuda.FloatTensor([0.75])
+    SIGMA_2 = torch.cuda.FloatTensor([math.exp(-8.)]) # torch.cuda.FloatTensor([0.1])
     INPUT_SIZE = 28 * 28
     LAYERS = np.array([400, 400])
+    LR = 1e-3
 
     errorRate = []  # to store error rates at different epochs
 
@@ -114,21 +115,21 @@ def multipleEpochAnalyis():
                   INPUT_SIZE=INPUT_SIZE,
                   LAYERS=LAYERS,
                   ACTIVATION_FUNCTIONS=np.array(['relu', 'relu', 'softmax']),
-                  LR=1e-3)
+                  LR=LR)
 
     for _ in tqdm(range(TRAIN_EPOCHS)):
         loss = mnist.train()
         err = mnist.test()
         print(err, float(loss))
         errorRate.append(err)
+        np.savetxt('./Results/BBB_epochs_errorRate.csv', np.asarray(errorRate), delimiter=",")
 
     errorRate = np.asarray(errorRate)
-    np.savetxt('./Results/BBB_epochs_errorRate.csv', errorRate, delimiter=",")
     # plt.plot(range(TRAIN_EPOCHS), errorRate, c='royalblue', label='Bayes BackProp')
     # plt.legend()
     # plt.tight_layout()
     # plt.savefig('./Results/MNIST_EPOCHS.png')
-    # torch.save(mnist.net.state_dict(), './Models/BBB_MNIST.pth')
+    torch.save(mnist.net.state_dict(), './Models/BBB_MNIST.pth')
 
 
 # Scalar Mixture vs Gaussian
@@ -191,27 +192,24 @@ def MixtureVsGaussianAnalyis():
 # Different values of sample, pi, sigma 1 and sigma 2
 def HyperparameterAnalysis():
     import sys
-    lrs = int(sys.argv[1])
+    samples = int(sys.argv[1])
 
     # hyper parameter declaration
     BATCH_SIZE = 125
     TEST_BATCH_SIZE = 1000
     CLASSES = 10
-    TRAIN_EPOCHS = 100
-    SAMPLES = np.array([1, 2, 5, 10])  # possible values of sample size
+    TRAIN_EPOCHS = 10
+    #SAMPLES = np.array([1, 2, 5, 10])  # possible values of sample size
     PI = np.array([0.25, 0.5, 0.75])  # possible values of pi
     SIGMA_1 = np.array([0, 1, 2])  # possible values of sigma1
     SIGMA_2 = np.array([6, 7, 8])  # possible values of sigma2
     INPUT_SIZE = 28 * 28
     LAYERS = np.array([400, 400])
-    if lrs:
-        LR = [1e-2, 1e-3]
-    else:
-        LR = [1e-4, 1e-5]
+    LR = [1e-3]
 
     errorRate = []
-    for sample in range(SAMPLES.size):
-        for pi in range(PI.size):
+    #for sample in range(SAMPLES.size):
+    for pi in range(PI.size):
             for sigma1 in range(SIGMA_1.size):
                 for sigma2 in range(SIGMA_2.size):
                     for lr in range(len(LR)):
@@ -220,7 +218,7 @@ def HyperparameterAnalysis():
                                       TEST_BATCH_SIZE=TEST_BATCH_SIZE,
                                       CLASSES=CLASSES,
                                       TRAIN_EPOCHS=TRAIN_EPOCHS,
-                                      SAMPLES=SAMPLES[sample],
+                                      SAMPLES=samples,
                                       hasScalarMixturePrior=True,
                                       PI=PI[pi],
                                       SIGMA_1=torch.cuda.FloatTensor([math.exp(-SIGMA_1[sigma1])]),
@@ -230,19 +228,19 @@ def HyperparameterAnalysis():
                                       ACTIVATION_FUNCTIONS=np.array(['relu', 'relu', 'softmax']),
                                       LR=LR[lr])
 
-                        print(SAMPLES[sample], PI[pi], SIGMA_1[sigma1], SIGMA_2[sigma2], LR[lr])
+                        print(samples, PI[pi], SIGMA_1[sigma1], SIGMA_2[sigma2], LR[lr])
 
-                        for _ in tqdm(range(TRAIN_EPOCHS)):
+                        acc = 0.
+                        for epoch in tqdm(range(TRAIN_EPOCHS)):
                             mnist.train()
-
-                        acc = mnist.test()
+                            acc = mnist.test()
+                            errorRate.append(
+                                [samples, PI[pi], SIGMA_1[sigma1], SIGMA_2[sigma2], LR[lr], epoch + 1, acc])
+                            np.savetxt('./Results/BBB_hyperparameters_samples' + str(samples) + '.csv', errorRate,
+                                       delimiter=",")
                         print(acc)
-                        errorRate.append(
-                            [SAMPLES[sample], PI[pi], SIGMA_1[sigma1], SIGMA_2[sigma2], LR[lr], acc])
-                        np.savetxt('./Results/BBB_hyperparameters' + str(lrs) + '.csv', errorRate, delimiter=",")
-
 
 if __name__ == '__main__':
-    # multipleEpochAnalyis()
-    # MixtureVsGaussianAnalyis()
+    multipleEpochAnalyis()
+    MixtureVsGaussianAnalyis()
     HyperparameterAnalysis()
