@@ -9,8 +9,8 @@ class EvaluateMNIST(object):
         TRAIN_EPOCHS = 0
         SAMPLES = 1
         PI = 0.
-        SIGMA_1 = torch.cuda.FloatTensor([math.exp(-0.)])
-        SIGMA_2 = torch.cuda.FloatTensor([math.exp(-8.)])
+        SIGMA_1 = torch.FloatTensor([math.exp(-0.)]).to(DEVICE)
+        SIGMA_2 = torch.FloatTensor([math.exp(-8.)]).to(DEVICE)
         LR = 1e-3
 
         self.mnist = MNIST(BATCH_SIZE=BATCH_SIZE,
@@ -32,12 +32,10 @@ class EvaluateMNIST(object):
         self.mnist.net.eval()
 
 
-ev = EvaluateMNIST(FILE='Models/BBB_MNIST_400_sample1_lr1e-3_mixed.pth', HIDDEN_UNITS=400)
-
-# ...
-# ...
-# ... Play around with ev.mnist.net and change weights
-# ...
-# ...
-
-print(ev.mnist.test(valid=False))
+import os
+for root, dirs, files in os.walk("Models"):
+    for file in files:
+        if file.startswith('BBB_MNIST') and file.endswith(".pth"):
+            print(file)
+            ev = EvaluateMNIST(FILE='Models/' + file, HIDDEN_UNITS=400)
+            print(ev.mnist.test(valid=False))

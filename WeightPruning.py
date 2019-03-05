@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 
+hasGPU = False
+DEVICE = torch.device("cuda" if hasGPU else "cpu")
+
 # Hyperparameter declaration
 BATCH_SIZE = 125
 TEST_BATCH_SIZE = 1000
@@ -10,8 +13,8 @@ CLASSES = 10
 TRAIN_EPOCHS = 100
 SAMPLES = 1
 PI = 0.25
-SIGMA_1 = torch.FloatTensor([0.75])
-SIGMA_2 = torch.FloatTensor([0.1])
+SIGMA_1 = torch.FloatTensor([0.75]).to(DEVICE)
+SIGMA_2 = torch.FloatTensor([0.1]).to(DEVICE)
 INPUT_SIZE = 28 * 28
 LAYERS = np.array([400, 400])
 NUM_BATCHES = 0
@@ -28,7 +31,7 @@ model = BayesianNetwork(inputSize=INPUT_SIZE,
                         SIGMA_1=SIGMA_1,
                         SIGMA_2=SIGMA_2).to(DEVICE)
 
-model.load_state_dict(torch.load('./Models/BBB_MNIST.pth'))
+model.load_state_dict(torch.load('./Models/BBB_MNIST_400_5samples.pth'))
 model.eval()
 
 def getThreshold(model,buckets):
@@ -58,13 +61,13 @@ for index in range(buckets.size):
     print(buckets[index],'-->',thresholds[index])
     t = Variable(torch.Tensor([thresholds[index]]))
     model1 = copy.deepcopy(model)
-    for i in range(1):
+    for i in range(3):
         sigma = model.state_dict()['layers.'+str(i)+'.weight_rho']
         mu = model.state_dict()['layers.'+str(i)+'.weight_mu'] 
         sigma = np.log(1. + np.exp(sigma))
         signalRatio = np.abs(mu) / sigma
         signalRatio = (signalRatio > t).float() * 1
-        model1.state_dict()['layers.'+str(i)+'.weight_rho'] = sigma * signalRatio
-        model1.state_dict()['layers.'+str(i)+'.weight_mu'] = mu * signalRatio
-    
+        model1.state_dict()['layers.'+str(i)+'.weight_rho'].data.copy_(sigma * signalRatio)
+        model1.state_dict()['layers.'+str(i)+'.weight_mu'].data.copy_(mu * signalRatio)
+
     torch.save(model1.state_dict(), './Models/BBB_MNIST_Pruned_'+str(buckets[index])+'.pth')
