@@ -1,7 +1,8 @@
 from BayesBackpropagation import *
 import numpy as np
-import matplotlib.pyplot as plt
 import copy
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 
 hasGPU = False
 DEVICE = torch.device("cuda" if hasGPU else "cpu")
@@ -46,12 +47,27 @@ def getThreshold(model,buckets):
     mus = np.concatenate(mus).ravel()
     sigmas = np.log(1. + np.exp(sigmas))
     sign_to_noise = np.abs(mus) / sigmas
-    #sign_to_noise = np.log10(sign_to_noise)/10
-    
-    #plt.hist(sign_to_noise,bins='auto')
-    #plt.show()
-    
     p = np.percentile(sign_to_noise, buckets)
+    
+    s = np.log10(sign_to_noise)/10
+    plt.figure(1)
+    plt.hist(s,bins= 'auto')
+    plt.axvline(x= np.log10(p[2])/10, color='red')
+    plt.savefig('./Results/SignalToNoiseRatioDensity.png')
+
+    plt.figure(2)
+    hist, bin_edges = np.histogram(s, normed=True)
+    Y = np.cumsum(hist)
+    print(bin_edges.size,Y.size)
+    X =[]
+    for i in range(10):
+        X.append((bin_edges[i]+bin_edges[i+1])*0.5)
+   
+    plt.plot(X, Y)
+    plt.axvline(x= np.log10(p[2])/10, color='red')
+    plt.hlines(y= 0.75, xmin=np.min(s),xmax=np.max(s),colors='red')
+    plt.savefig('./Results/SignalToNoiseRatioDensity_CDF.png')
+    
     return p
 
 buckets = np.asarray([0,50,75,95,98])
