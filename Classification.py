@@ -105,7 +105,7 @@ def multipleEpochAnalyis():
     LR = 1e-3
     GOOGLE_INIT = False
 
-    errorRate = []  # to store error rates at different epochs
+    # errorRate = []  # to store error rates at different epochs
 
     mnist = MNIST(BATCH_SIZE=BATCH_SIZE,
                   TEST_BATCH_SIZE=TEST_BATCH_SIZE,
@@ -124,12 +124,12 @@ def multipleEpochAnalyis():
 
     for _ in tqdm(range(TRAIN_EPOCHS)):
         loss = mnist.train()
-        err = mnist.test()
-        print(err, float(loss))
-        errorRate.append(err)
-        np.savetxt('./Results/BBB_epochs_errorRate.csv', np.asarray(errorRate), delimiter=",")
+        validErr, testErr = mnist.test(valid=True), mnist.test(valid=False)
+        print(validErr, testErr, float(loss))
+        # errorRate.append(validErr)
+        # np.savetxt('./Results/BBB_epochs_errorRate_blundell_1200_5samples.csv', np.asarray(errorRate), delimiter=",")
 
-    errorRate = np.asarray(errorRate)
+    # errorRate = np.asarray(errorRate)
     # plt.plot(range(TRAIN_EPOCHS), errorRate, c='royalblue', label='Bayes BackProp')
     # plt.legend()
     # plt.tight_layout()
