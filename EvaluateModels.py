@@ -1,5 +1,6 @@
 from Classification import *
 
+HIDDEN_UNITS=400
 
 class EvaluateMNIST(object):
     def __init__(self, FILE, HIDDEN_UNITS, BATCH_SIZE=125, TEST_BATCH_SIZE=1000, CLASSES=10, INPUT_SIZE=28 * 28):
@@ -35,7 +36,7 @@ class EvaluateMNIST(object):
 import os
 for root, dirs, files in os.walk("Models"):
     for file in files:
-        if file.startswith('BBB_MNIST') and file.endswith(".pth"):
+        if file.startswith('BBB_MNIST_'+str(HIDDEN_UNITS)) and file.endswith(".pth"):
             print(file)
-            ev = EvaluateMNIST(FILE='Models/' + file, HIDDEN_UNITS=400)
+            ev = EvaluateMNIST(FILE='Models/' + file, HIDDEN_UNITS=HIDDEN_UNITS)
             print(ev.mnist.test(valid=False))
