@@ -1,6 +1,5 @@
 from BayesBackpropagation import *
 import numpy as np
-import seaborn as sns
 import copy
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
@@ -48,14 +47,20 @@ def getThreshold(model,buckets):
     mus = np.concatenate(mus).ravel()
     sigmas = np.log(1. + np.exp(sigmas))
     sign_to_noise = np.abs(mus) / sigmas
-    s = np.log10(sign_to_noise)/10
-    plt.hist(s,bins= 'auto')
-    plt.savefig('./Results/SignalToNoiseRatioDensity.png')
-    #sns_plot = sns.kdeplot(s)
-    #fig = sns_plot.get_figure()
-    #fig.savefig('./Results/SignalToNoiseRatioDensity.png')
-    
     p = np.percentile(sign_to_noise, buckets)
+    
+    s = np.log10(sign_to_noise)/10
+    plt.figure(1)
+    plt.hist(s,bins= 'auto')
+    plt.axvline(x= np.log10(p[2])/10, color='red')
+    plt.savefig('./Results/SignalToNoiseRatioDensity.png')
+
+    plt.figure(2)
+    plt.plot(s, np.cumsum(s))
+    plt.axvline(x= np.log10(p[2])/10, color='red')
+    plt.hlines(y= 0.75, xmin=np.min(s),xmax=np.max(s),colors='red')
+    plt.savefig('./Results/SignalToNoiseRatioDensity_CDF.png')
+    
     return p
 
 buckets = np.asarray([0,50,75,95,98])

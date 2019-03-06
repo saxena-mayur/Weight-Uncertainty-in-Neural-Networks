@@ -78,7 +78,7 @@ train_x,train_y,test_x,test_y, pokemonType, pokemonColors = generatePokemonData(
 
 
 #Hyperparameter setting
-TRAIN_EPOCHS = 500
+TRAIN_EPOCHS = 700
 SAMPLES = 5
 TEST_SAMPLES = 10
 BATCH_SIZE = train_x.shape[0]
@@ -108,7 +108,7 @@ print('Training Begins!')
 #Declare Network
 net = BayesianNetwork(inputSize = X.shape[1],\
                       CLASSES = CLASSES, \
-                      layers=np.array([200,200]), \
+                      layers=np.array([100,100]), \
                       activations = np.array(['relu','relu','softmax']), \
                       SAMPLES = SAMPLES, \
                       BATCH_SIZE = BATCH_SIZE,\
