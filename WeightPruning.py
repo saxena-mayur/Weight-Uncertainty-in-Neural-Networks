@@ -1,7 +1,9 @@
 from BayesBackpropagation import *
 import numpy as np
-import seaborn as sn
+import seaborn as sns
 import copy
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 
 hasGPU = False
 DEVICE = torch.device("cuda" if hasGPU else "cpu")
@@ -47,10 +49,12 @@ def getThreshold(model,buckets):
     sigmas = np.log(1. + np.exp(sigmas))
     sign_to_noise = np.abs(mus) / sigmas
     s = np.log10(sign_to_noise)/10
-    sns_plot = sns.kdeplot(s)
-    fig = sns_plot.get_figure()
-    fig.savefig('./Results/SignalToNoiseRatioDensity.png')
-
+    plt.hist(s,bins= 'auto')
+    plt.savefig('./Results/SignalToNoiseRatioDensity.png')
+    #sns_plot = sns.kdeplot(s)
+    #fig = sns_plot.get_figure()
+    #fig.savefig('./Results/SignalToNoiseRatioDensity.png')
+    
     p = np.percentile(sign_to_noise, buckets)
     return p
 
