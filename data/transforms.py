@@ -1,3 +1,4 @@
+# Credit: Kyuhong Shim(skhu20@snu.ac.kr) - https://github.com/khshim/pytorch_mnist
 import torch
 
 
