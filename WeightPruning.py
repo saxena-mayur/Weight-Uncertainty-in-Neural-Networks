@@ -1,6 +1,6 @@
 from BayesBackpropagation import *
 import numpy as np
-import matplotlib.pyplot as plt
+import seaborn as sn
 import copy
 
 hasGPU = False
@@ -46,11 +46,11 @@ def getThreshold(model,buckets):
     mus = np.concatenate(mus).ravel()
     sigmas = np.log(1. + np.exp(sigmas))
     sign_to_noise = np.abs(mus) / sigmas
-    #sign_to_noise = np.log10(sign_to_noise)/10
-    
-    #plt.hist(sign_to_noise,bins='auto')
-    #plt.show()
-    
+    s = np.log10(sign_to_noise)/10
+    sns_plot = sns.kdeplot(s)
+    fig = sns_plot.get_figure()
+    fig.savefig('./Results/SignalToNoiseRatioDensity.png')
+
     p = np.percentile(sign_to_noise, buckets)
     return p
 

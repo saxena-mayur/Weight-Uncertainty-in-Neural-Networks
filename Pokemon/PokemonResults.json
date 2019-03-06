@@ -1,0 +1,12 @@
+{
+    "Black": "[[\"Grass\",100]]",
+    "Blue": "[[\"Water\",100]]",
+    "Brown": "[[\"Normal\",94],[\"Flying\",5],[\"Bug\",1]]",
+    "Green": "[[\"Grass\",100]]",
+    "Grey": "[[\"Steel\",70],[\"Normal\",16],[\"Rock\",11],[\"Ground\",2],[\"Flying\",1]]",
+    "Pink": "[[\"Steel\",76],[\"Rock\",17],[\"Normal\",6],[\"Bug\",1]]",
+    "Purple": "[[\"Water\",72],[\"Poison\",14],[\"Normal\",6],[\"Flying\",4],[\"Ground\",4]]",
+    "Red": "[[\"Fire\",95],[\"Normal\",5]]",
+    "White": "[[\"Steel\",89],[\"Rock\",11]]",
+    "Yellow": "[[\"Electric\",72],[\"Bug\",12],[\"Flying\",7],[\"Fire\",4],[\"Normal\",2],[\"Grass\",2],[\"Psychic\",1]]"
+}
