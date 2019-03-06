@@ -57,7 +57,13 @@ def getThreshold(model,buckets):
 
     plt.figure(2)
     hist, bin_edges = np.histogram(s, normed=True)
-    plt.plot(s, np.cumsum(hist))
+    Y = np.cumsum(hist)
+    print(bin_edges.size,Y.size)
+    X =[]
+    for i in range(10):
+        X.append((bin_edges[i]+bin_edges[i+1])*0.5)
+   
+    plt.plot(X, Y)
     plt.axvline(x= np.log10(p[2])/10, color='red')
     plt.hlines(y= 0.75, xmin=np.min(s),xmax=np.max(s),colors='red')
     plt.savefig('./Results/SignalToNoiseRatioDensity_CDF.png')
