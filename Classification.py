@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
+from SGD import *
 from BayesBackpropagation import *
 from data.dataset import MNISTDataset
 from data.parser import parse_mnist
@@ -11,21 +12,27 @@ from data.transforms import MNISTTransform
 
 class MNIST(object):
     def __init__(self, BATCH_SIZE, TEST_BATCH_SIZE, CLASSES, TRAIN_EPOCHS, SAMPLES, hasScalarMixturePrior, PI, SIGMA_1,
-                 SIGMA_2, INPUT_SIZE, LAYERS, ACTIVATION_FUNCTIONS, LR, MODE='mlp', GOOGLE_INIT=False):
-        # Prepare data
-        if MODE == 'mlp':
-            train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(2)
-        elif MODE == 'cnn':
-            train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(4)
-        else:
-            raise ValueError('Usupported mode')
+                 SIGMA_2, INPUT_SIZE, LAYERS, ACTIVATION_FUNCTIONS, LR, MODE='mlp', GOOGLE_INIT=False,
+                 train_loader=None, valid_loader=None, test_loader=None):
+        if train_loader is None or valid_loader is None or test_loader is None:
+            # Prepare data
+            if MODE == 'mlp':
+                train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(2)
+            elif MODE == 'cnn':
+                train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(4)
+            else:
+                raise ValueError('Usupported mode')
 
-        train_dataset = MNISTDataset(train_data, train_label, transform=MNISTTransform())
-        valid_dataset = MNISTDataset(valid_data, valid_label, transform=MNISTTransform())
-        test_dataset = MNISTDataset(test_data, test_label, transform=MNISTTransform())
-        self.train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True, **LOADER_KWARGS)
-        self.valid_loader = DataLoader(valid_dataset, TEST_BATCH_SIZE, shuffle=False, **LOADER_KWARGS)
-        self.test_loader = DataLoader(test_dataset, TEST_BATCH_SIZE, shuffle=False, **LOADER_KWARGS)
+            train_dataset = MNISTDataset(train_data, train_label, transform=MNISTTransform())
+            valid_dataset = MNISTDataset(valid_data, valid_label, transform=MNISTTransform())
+            test_dataset = MNISTDataset(test_data, test_label, transform=MNISTTransform())
+            self.train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True, **LOADER_KWARGS)
+            self.valid_loader = DataLoader(valid_dataset, TEST_BATCH_SIZE, shuffle=False, **LOADER_KWARGS)
+            self.test_loader = DataLoader(test_dataset, TEST_BATCH_SIZE, shuffle=False, **LOADER_KWARGS)
+        else:
+            self.train_loader = train_loader
+            self.valid_loader = valid_loader
+            self.test_loader = test_loader
 
         # Hyper parameter setting
         self.TEST_BATCH_SIZE = TEST_BATCH_SIZE
@@ -245,7 +252,108 @@ def HyperparameterAnalysis():
                                        delimiter=",")
                         print(acc)
 
+def classify(MODEL, HIDDEN_UNITS, TRAIN_EPOCHS, DATASET, BATCH_SIZE=125, TEST_BATCH_SIZE=1000):
+    """Set model"""
+    if DATASET == 'mnist':
+        train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(2)
+
+        train_dataset = MNISTDataset(train_data, train_label, transform=MNISTTransform())
+        valid_dataset = MNISTDataset(valid_data, valid_label, transform=MNISTTransform())
+        test_dataset = MNISTDataset(test_data, test_label, transform=MNISTTransform())
+        train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True, **LOADER_KWARGS)
+        valid_loader = DataLoader(valid_dataset, TEST_BATCH_SIZE, shuffle=False, **LOADER_KWARGS)
+        test_loader = DataLoader(test_dataset, TEST_BATCH_SIZE, shuffle=False, **LOADER_KWARGS)
+
+        INPUT_SIZE = 28 * 28
+        CLASSES = 10
+    else:
+        raise ValueError('Valid params: DATASET=mnist')
+
+    if MODEL== 'bbb':
+        # Define the used hyperparameters
+        if HIDDEN_UNITS==400:
+            SAMPLES = 1
+            PI = 0.75
+            SIGMA_1 = 1.
+            SIGMA_2 = 6.
+            LR = 1e-3
+            GOOGLE_INIT = False
+            BLUNDELL_WEIGHTING = False
+        elif HIDDEN_UNITS==800:
+            SAMPLES = 1
+            PI = 0.75
+            SIGMA_1 = 1.
+            SIGMA_2 = 6.
+            LR = 1e-3
+            GOOGLE_INIT = False
+            BLUNDELL_WEIGHTING = False
+        elif HIDDEN_UNITS==1200:
+            SAMPLES = 1
+            PI = 0.75
+            SIGMA_1 = 0.
+            SIGMA_2 = 7.
+            LR = 1e-4
+            GOOGLE_INIT = False
+            BLUNDELL_WEIGHTING = False
+        else:
+            raise ValueError('Valid params: HIDDEN_UNITS=400|800|1200')
+        LAYERS = np.array([HIDDEN_UNITS, HIDDEN_UNITS])
+
+        # errorRate = []  # to store error rates at different epochs
+
+        mnist = MNIST(BATCH_SIZE=BATCH_SIZE,
+                      TEST_BATCH_SIZE=TEST_BATCH_SIZE,
+                      CLASSES=CLASSES,
+                      TRAIN_EPOCHS=TRAIN_EPOCHS,
+                      SAMPLES=SAMPLES,
+                      hasScalarMixturePrior=True,
+                      PI=PI,
+                      SIGMA_1=torch.FloatTensor([math.exp(-SIGMA_1)]).to(DEVICE),
+                      SIGMA_2=torch.FloatTensor([math.exp(-SIGMA_2)]).to(DEVICE),
+                      INPUT_SIZE=INPUT_SIZE,
+                      LAYERS=LAYERS,
+                      ACTIVATION_FUNCTIONS=np.array(['relu', 'relu', 'softmax']),
+                      LR=LR,
+                      GOOGLE_INIT=GOOGLE_INIT,
+                      train_loader=train_loader,
+                      test_loader=test_loader,
+                      valid_loader=valid_loader)
+
+        train_losses = np.zeros(TRAIN_EPOCHS)
+        valid_errs = np.zeros(TRAIN_EPOCHS)
+        test_errs = np.zeros(TRAIN_EPOCHS)
+
+        for epoch in tqdm(range(TRAIN_EPOCHS)):
+            loss = mnist.train(blundell_weighting=BLUNDELL_WEIGHTING)
+            validErr, testErr = mnist.test(valid=True), mnist.test(valid=False)
+
+            print(validErr, testErr, float(loss))
+
+            valid_errs[epoch] = validErr
+            test_errs[epoch] = testErr
+            train_losses[epoch] = float(loss)
+
+        # Save results
+        torch.save(mnist.net.state_dict(), './Models/BBB_MNIST.pth')
+
+        path = 'Results/BBB_MNIST_' + str(HIDDEN_UNITS)
+        wr = csv.writer(open(path + '.csv', 'w'), delimiter=',', lineterminator='\n')
+        wr.writerow(['epoch', 'valid_acc', 'test_acc', 'train_losses'])
+        for i in range(max_epoch):
+            wr.writerow((i + 1, valid_errs[i], test_errs[i], train_losses[i]))
+    elif MODEL=='dropout' or MODEL=='mlp':
+        hyper = SGD_Hyper()
+        hyper.hidden_units = HIDDEN_UNITS
+        hyper.max_epoch = TRAIN_EPOCHS
+        hyper.mode = MODEL
+
+        # Train and save results
+        SGD_run(hyper, train_loader=train_loader, test_loader=test_loader, valid_loader=valid_loader)
+
+
 if __name__ == '__main__':
-    multipleEpochAnalyis()
-    MixtureVsGaussianAnalyis()
-    HyperparameterAnalysis()
+    # multipleEpochAnalyis()
+    # MixtureVsGaussianAnalyis()
+    # HyperparameterAnalysis()
+
+    classify(MODEL='dropout', HIDDEN_UNITS=400, TRAIN_EPOCHS=600, DATASET='mnist')
