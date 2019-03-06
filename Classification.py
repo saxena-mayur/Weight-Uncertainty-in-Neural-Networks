@@ -9,10 +9,9 @@ from data.dataset import MNISTDataset
 from data.parser import parse_mnist
 from data.transforms import MNISTTransform
 
-
 class MNIST(object):
     def __init__(self, BATCH_SIZE, TEST_BATCH_SIZE, CLASSES, TRAIN_EPOCHS, SAMPLES, hasScalarMixturePrior, PI, SIGMA_1,
-                 SIGMA_2, INPUT_SIZE, LAYERS, ACTIVATION_FUNCTIONS, LR, MODE='mlp'):
+                 SIGMA_2, INPUT_SIZE, LAYERS, ACTIVATION_FUNCTIONS, LR, MODE='mlp', GOOGLE_INIT=False):
         # Prepare data
         if MODE == 'mlp':
             train_data, train_label, valid_data, valid_label, test_data, test_label = parse_mnist(2)
@@ -54,18 +53,22 @@ class MNIST(object):
                                    hasScalarMixturePrior=hasScalarMixturePrior,
                                    PI=PI,
                                    SIGMA_1=SIGMA_1,
-                                   SIGMA_2=SIGMA_2).to(DEVICE)
+                                   SIGMA_2=SIGMA_2,
+                                   GOOGLE_INIT=GOOGLE_INIT).to(DEVICE)
 
         # Optimizer declaration
         self.optimizer = optim.SGD(self.net.parameters(), lr=LR)  # self.optimizer = optim.Adam(self.net.parameters())
 
     # Define the training step for MNIST data set
-    def train(self):
+    def train(self, blundell_weighting = False):
         loss = 0.
         for batch_idx, (input, target) in enumerate(self.train_loader):
             input, target = input.to(DEVICE), target.to(DEVICE)
             self.net.zero_grad()
-            loss = self.net.BBB_loss(input, target)
+            if blundell_weighting:
+                loss = self.net.BBB_loss(input, target, batch_idx)
+            else:
+                loss = self.net.BBB_loss(input, target)
             loss.backward()
             self.optimizer.step()
         return loss
@@ -100,6 +103,7 @@ def multipleEpochAnalyis():
     INPUT_SIZE = 28 * 28
     LAYERS = np.array([400, 400])
     LR = 1e-3
+    GOOGLE_INIT = False
 
     errorRate = []  # to store error rates at different epochs
 
@@ -115,7 +119,8 @@ def multipleEpochAnalyis():
                   INPUT_SIZE=INPUT_SIZE,
                   LAYERS=LAYERS,
                   ACTIVATION_FUNCTIONS=np.array(['relu', 'relu', 'softmax']),
-                  LR=LR)
+                  LR=LR,
+                  GOOGLE_INIT=GOOGLE_INIT)
 
     for _ in tqdm(range(TRAIN_EPOCHS)):
         loss = mnist.train()

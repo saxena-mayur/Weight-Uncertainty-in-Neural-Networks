@@ -29,10 +29,16 @@ class BayesianLinear(nn.Module):
         self.out_features = out_features
 
         # Initialise weights and bias
-        self.weight_mu = nn.Parameter(torch.Tensor(out_features, in_features).normal_(0., .1))  # or .01
-        self.weight_rho = nn.Parameter(torch.Tensor(out_features, in_features).uniform_(-3., -3.))  # or -4
-        self.bias_mu = nn.Parameter(torch.Tensor(out_features).normal_(0., .1))
-        self.bias_rho = nn.Parameter(torch.Tensor(out_features).uniform_(-3., -3.))
+        if parent.GOOGLE_INIT: # These are used in the Tensorflow implementation.
+            self.weight_mu = nn.Parameter(torch.Tensor(out_features, in_features).normal_(0., .05))  # or .01
+            self.weight_rho = nn.Parameter(torch.Tensor(out_features, in_features).normal_(-5., .05))  # or -4
+            self.bias_mu = nn.Parameter(torch.Tensor(out_features).normal_(0., .05))
+            self.bias_rho = nn.Parameter(torch.Tensor(out_features).normal_(-5., .05))
+        else: # These are the ones we've been using so far.
+            self.weight_mu = nn.Parameter(torch.Tensor(out_features, in_features).normal_(0., .1))
+            self.weight_rho = nn.Parameter(torch.Tensor(out_features, in_features).uniform_(-3., -3.))
+            self.bias_mu = nn.Parameter(torch.Tensor(out_features).normal_(0., .1))
+            self.bias_rho = nn.Parameter(torch.Tensor(out_features).uniform_(-3., -3.))
 
         # Initialise prior and posterior
         self.lpw = 0.
@@ -74,7 +80,7 @@ class BayesianLinear(nn.Module):
 
 class BayesianNetwork(nn.Module):
     def __init__(self, inputSize, CLASSES, layers, activations, SAMPLES, BATCH_SIZE, NUM_BATCHES, hasScalarMixturePrior,
-                 PI, SIGMA_1, SIGMA_2):
+                 PI, SIGMA_1, SIGMA_2, GOOGLE_INIT=False):
         super().__init__()
         self.inputSize = inputSize
         self.activations = activations
@@ -83,6 +89,7 @@ class BayesianNetwork(nn.Module):
         self.BATCH_SIZE = BATCH_SIZE
         self.NUM_BATCHES = NUM_BATCHES
         self.DEPTH = 0  # captures depth of network
+        self.GOOGLE_INIT = GOOGLE_INIT
         # to make sure that number of hidden layers is one less than number of activation function
         assert (activations.size - layers.size) == 1
 
@@ -128,7 +135,7 @@ class BayesianNetwork(nn.Module):
             lpq += self.layers[i].lqw
         return lpw, lpq
 
-    def BBB_loss(self, input, target):
+    def BBB_loss(self, input, target, batch_idx = None):
 
         s_log_pw, s_log_qw, s_log_likelihood, sample_log_likelihood = 0., 0., 0., 0.
         for _ in range(self.SAMPLES):
@@ -144,4 +151,8 @@ class BayesianNetwork(nn.Module):
 
         l_pw, l_qw, l_likelihood = s_log_pw / self.SAMPLES, s_log_qw / self.SAMPLES, s_log_likelihood / self.SAMPLES
 
-        return (1. / (self.NUM_BATCHES)) * (l_qw - l_pw) - l_likelihood
+        # KL weighting
+        if batch_idx is None: # standard literature approach - Graves (2011)
+            return (1. / (self.NUM_BATCHES)) * (l_qw - l_pw) - l_likelihood
+        else: # alternative - Blundell (2015)
+            return 2. ** ( self.NUM_BATCHES - batch_idx - 1. ) / ( 2. ** self.NUM_BATCHES - 1 ) * (l_qw - l_pw) - l_likelihood
