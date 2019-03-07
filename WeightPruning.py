@@ -50,22 +50,24 @@ def getThreshold(model,buckets):
     p = np.percentile(sign_to_noise, buckets)
     
     s = np.log10(sign_to_noise)/10
-    plt.figure(1)
-    plt.hist(s,bins= 'auto')
-    plt.axvline(x= np.log10(p[2])/10, color='red')
-    plt.savefig('./Results/SignalToNoiseRatioDensity.png')
-
-    plt.figure(2)
-    hist, bin_edges = np.histogram(s, normed=True)
-    Y = np.cumsum(hist)
-    print(bin_edges.size,Y.size)
+    hist, bin_edges = np.histogram(s, normed=True, density=True)
     X =[]
     for i in range(10):
         X.append((bin_edges[i]+bin_edges[i+1])*0.5)
-   
+    
+    plt.plot(X,hist)
+    plt.axvline(x= np.log10(p[2])/10, color='red')
+    plt.ylabel('Density')
+    plt.xlabel('Signal−to−Noise Ratio (dB)')
+    plt.savefig('./Results/SignalToNoiseRatioDensity.png')
+
+    plt.figure(2)
+    Y = np.cumsum(hist)
     plt.plot(X, Y)
     plt.axvline(x= np.log10(p[2])/10, color='red')
     plt.hlines(y= 0.75, xmin=np.min(s),xmax=np.max(s),colors='red')
+    plt.ylabel('CDF')
+    plt.xlabel('Signal−to−Noise Ratio (dB)')
     plt.savefig('./Results/SignalToNoiseRatioDensity_CDF.png')
     
     return p
