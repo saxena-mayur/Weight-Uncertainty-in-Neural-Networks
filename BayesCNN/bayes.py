@@ -4,96 +4,68 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
-from torchvision import datasets, transforms
-from torchvision.utils import make_grid
-from torch.autograd import Variable
+from collections import OrderedDict
 
 #Checking if gpu is available
 hasGPU = torch.cuda.is_available()
 DEVICE = torch.device("cuda" if hasGPU else "cpu")
 LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if hasGPU else {}
 
-from utils import Flatten, ScaleMixtureGaussian, Var, DEVICE, PI, SIGMA_1, SIGMA_2
+from utils import Flatten, ScaleMixtureGaussian, Var, DEVICE, PI, SIGMA_1, SIGMA_2, gaussian
 
-
-#Single Bayesian fully connected Layer with linear activation function  
-class BayesLayer(nn.Module):
-    def __init__(self, name, weight_shape, bias_shape, log_prior, functional = F.linear, **func_params):
+class BayesWrapper:
+    def __init__(self, net, prior_nll, name = 'Bayes Model'):
         super().__init__()
-        self.name = name
-        self.weight_shape = weight_shape
-        self.bias_shape = bias_shape
-        self.log_prior = log_prior
-        self.functional = functional
-        self.kl = 0
-        self.func_params = func_params
+        self.name = name # network name
+        self.net = net
+        self.bayes_params = [(name,
+                              torch.rand_like(p)*.1, #mu
+                              torch.zeros_like(p)-3,#rho,
+                              torch.zeros_like(p),#sigma
+                              torch.zeros_like(p)) #epsilon (buffer)
+                             for name,p in self.net.state_dict().items()]
+        for (name, *tensors) in self.bayes_params:
+            for t in tensors:
+                t.to(DEVICE)
+        self.kl, self.pnll, self.vp = 0, 0, 0
+        self.prior_nll = prior_nll
+        self.xent = nn.CrossEntropyLoss()
+        self.optimizer = optim.Adam([mu for name, mu, rho, _, eps in self.bayes_params]+
+                                    [rho for name, mu, rho, _, eps in self.bayes_params])
+    
+    def forward(self, input):     
+        for name, mu, rho, sigma, eps in self.bayes_params:
+            eps.normal_()
+            sigma.copy_(torch.log(1+torch.exp(rho)))
+            w = mu + eps*sigma
+            self.pnll += self.prior_nll(w)
+            self.vp += (-torch.log(np.sqrt(2*np.pi)*sigma) - eps**2/2).sum()
+            self.net.load_state_dict(OrderedDict({name:w}), strict=False)
+        return self.net(input)
 
-        self.weight_mu = nn.Parameter(torch.Tensor(*weight_shape).normal_(0., .1))  # or .01
-        self.weight_rho = nn.Parameter(torch.Tensor(*weight_shape).uniform_(-3., -3.))  # or -4
-        self.bias_mu = nn.Parameter(torch.Tensor(*bias_shape).normal_(0., .1))
-        self.bias_rho = nn.Parameter(torch.Tensor(*bias_shape).uniform_(-3., -3.))
-    
-    def sample(self):
-        weight_sigma = torch.log(1. + torch.exp(self.weight_rho))
-        bias_sigma = torch.log(1. + torch.exp(self.bias_rho))
+
+    def step(self, outputs, targets, beta):
+        self.net.zero_grad()
+        n_samples = len(outputs)
+        xe = sum([self.xent(out, targets) for out in outputs])/n_samples
+        kl = (self.vp + self.pnll)/n_samples
+        net_loss = xe + beta*self.pnll/n_samples
+        loss = net_loss + beta*self.vp/n_samples
+        net_loss.backward() # with respect to w
         
-        # Sample weights and bias
-        epsilon_weight = torch.randn_like(self.weight_mu).to(DEVICE)
-        epsilon_bias = torch.randn_like(self.bias_mu).to(DEVICE)
-        weight = self.weight_mu + weight_sigma * epsilon_weight
-        bias = self.bias_mu + bias_sigma * epsilon_bias
+        for (name, mu, rho, sigma, eps), p in zip(self.bayes_params, self.net.parameters()):
+            mu.grad = p.grad
+            rho.grad = eps*(p.grad - beta/sigma)/(1+torch.exp(-rho))
+            
+        self.optimizer.step()
+        self.vp, self.pnll, self.kl = 0, 0, 0
+        return kl, xe, loss
         
-        self.kl = (-.5*torch.log(np.pi*np.e*weight_sigma.pow(2)).sum()
-                   -.5*torch.log(np.pi*np.e*bias_sigma.pow(2)).sum() 
-                   - self.log_prior(weight) 
-                   - self.log_prior(bias))
-        return weight, bias
-    
-    def forward(self, input, noise = True):
-        if not noise:
-            return self.functional(input, self.weight_mu, self.bias_mu)
-        weight, bias = self.sample()
-        return self.functional(input, weight, bias, **self.func_params)
-    
     def __repr__(self):
-        return '{0}(weight_shape={1}, bias_shape={2})'.format(
-                        self.name, self.weight_shape, self.bias_shape)
-        
-        
+        return 'BayesWrapper(\n{0})'.format(self.net.__repr__())
+
+    def __call__(self, input):
+        return self.forward(input)
     
-class Bayesian(nn.Sequential):
-    def __init__(self, net, log_prior):
-        self.log_prior = log_prior
-        super().__init__(*[self._bayesianize(l) for l in net])
-        
-    def _bayesianize(self, layer):
-        if isinstance(layer, nn.Linear):
-            return BayesLayer(
-                        name = 'BayesLinear',
-                        weight_shape = (layer.out_features, layer.in_features),
-                        bias_shape = (layer.out_features, ), 
-                        log_prior = self.log_prior, 
-                        functional = F.linear)
-        
-        elif isinstance(layer, nn.Conv2d):
-            return BayesLayer(
-                        name = 'BayesConv2D',
-                        weight_shape = (layer.out_channels,
-                                        layer.in_channels, 
-                                        *layer.kernel_size), 
-                        bias_shape = (layer.out_channels,), 
-                        log_prior = self.log_prior, 
-                        functional = F.conv2d, 
-                        padding = layer.padding, 
-                        stride = layer.stride, 
-                        dilation = layer.dilation, 
-                        groups = layer.groups)
-
-        return layer
- 
-    def kl(self):
-        return sum([l.kl for l in self if hasattr(l, 'kl')])
-        
-
-
+    def train(self):
+        self.net.train()
