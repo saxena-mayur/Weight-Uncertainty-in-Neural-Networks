@@ -50,7 +50,7 @@ def getThreshold(model,buckets):
     p = np.percentile(sign_to_noise, buckets)
     
     s = np.log10(sign_to_noise)/10
-    hist, bin_edges = np.histogram(s, normed=True, density=True)
+    hist, bin_edges = np.histogram(s, bins='auto', density=True)
     X =[]
     for i in range(10):
         X.append((bin_edges[i]+bin_edges[i+1])*0.5)
