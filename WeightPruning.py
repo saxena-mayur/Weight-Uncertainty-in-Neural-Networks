@@ -52,7 +52,7 @@ def getThreshold(model,buckets):
     s = np.log10(sign_to_noise)/10
     hist, bin_edges = np.histogram(s, bins='auto', density=True)
     X =[]
-    for i in range(10):
+    for i in range(hist.size):
         X.append((bin_edges[i]+bin_edges[i+1])*0.5)
     
     plt.plot(X,hist)
