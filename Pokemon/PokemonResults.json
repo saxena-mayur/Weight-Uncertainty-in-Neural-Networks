@@ -1,12 +1,26 @@
 {
-    "Black": "[[\"Grass\",100]]",
-    "Blue": "[[\"Water\",100]]",
-    "Brown": "[[\"Normal\",71],[\"Flying\",25],[\"Fire\",2],[\"Ground\",1],[\"Bug\",1]]",
-    "Green": "[[\"Grass\",100]]",
-    "Grey": "[[\"Normal\",30],[\"Steel\",25],[\"Flying\",23],[\"Poison\",6],[\"Bug\",5],[\"Ground\",5],[\"Water\",3],[\"Rock\",1],[\"Grass\",1],[\"Psychic\",1]]",
-    "Pink": "[[\"Steel\",41],[\"Normal\",32],[\"Bug\",18],[\"Electric\",5],[\"Water\",3],[\"Flying\",1]]",
-    "Purple": "[[\"Water\",48],[\"Flying\",25],[\"Normal\",19],[\"Poison\",6],[\"Ground\",2]]",
-    "Red": "[[\"Fire\",96],[\"Flying\",3],[\"Normal\",1]]",
-    "White": "[[\"Steel\",77],[\"Normal\",9],[\"Electric\",9],[\"Bug\",5]]",
-    "Yellow": "[[\"Electric\",50],[\"Bug\",37],[\"Fire\",9],[\"Normal\",4]]"
+    "newData": {
+        "Aqua": "[[\"Water\",100]]",
+        "Chocolate": "[[\"Bug\",33],[\"Normal\",32],[\"Fire\",25],[\"Flying\",10]]",
+        "Gold": "[[\"Electric\",52],[\"Bug\",38],[\"Flying\",6],[\"Fire\",3],[\"Psychic\",1]]",
+        "Lime": "[[\"Grass\",100]]",
+        "Magenta": "[[\"Normal\",44],[\"Water\",40],[\"Flying\",14],[\"Fairy\",1],[\"Ice\",1]]",
+        "Maroon": "[[\"Normal\",95],[\"Flying\",4],[\"Fire\",1]]",
+        "Navy": "[[\"Water\",88],[\"Poison\",12]]",
+        "Olive": "[[\"Grass\",98],[\"Bug\",1],[\"Flying\",1]]",
+        "Orange": "[[\"Bug\",41],[\"Fire\",25],[\"Electric\",20],[\"Flying\",10],[\"Normal\",2],[\"Psychic\",2]]",
+        "Silver": "[[\"Normal\",85],[\"Fairy\",8],[\"Water\",6],[\"Psychic\",1]]"
+    },
+    "original": {
+        "Black": "[[\"Normal\",45],[\"Flying\",37],[\"Ghost\",13],[\"Poison\",5]]",
+        "Blue": "[[\"Water\",100]]",
+        "Brown": "[[\"Normal\",96],[\"Fire\",4]]",
+        "Green": "[[\"Grass\",100]]",
+        "Grey": "[[\"Normal\",49],[\"Rock\",24],[\"Ground\",19],[\"Water\",5],[\"Steel\",2],[\"Flying\",1]]",
+        "Pink": "[[\"Fairy\",51],[\"Normal\",45],[\"Psychic\",4]]",
+        "Purple": "[[\"Poison\",91],[\"Flying\",7],[\"Normal\",1],[\"Ghost\",1]]",
+        "Red": "[[\"Fire\",99],[\"Normal\",1]]",
+        "White": "[[\"Fairy\",67],[\"Normal\",31],[\"Water\",1],[\"Psychic\",1]]",
+        "Yellow": "[[\"Electric\",69],[\"Bug\",27],[\"Flying\",2],[\"Fire\",2]]"
+    }
 }
