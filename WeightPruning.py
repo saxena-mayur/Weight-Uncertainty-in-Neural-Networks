@@ -61,6 +61,7 @@ def getThreshold(model,buckets):
     plt.ylabel('Density')
     plt.xlabel('Signal−to−Noise Ratio (dB)')
     plt.savefig('./Results/SignalToNoiseRatioDensity.png')
+    plt.savefig('./Results/SignalToNoiseRatioDensity.eps', format='eps', dpi=1000)
 
     plt.figure(2)
     Y = np.cumsum(hist)
@@ -70,6 +71,7 @@ def getThreshold(model,buckets):
     plt.ylabel('CDF')
     plt.xlabel('Signal−to−Noise Ratio (dB)')
     plt.savefig('./Results/SignalToNoiseRatioDensity_CDF.png')
+    plt.savefig('./Results/SignalToNoiseRatioDensity_CDF.eps', format='eps', dpi=1000)
     
     return p
 
