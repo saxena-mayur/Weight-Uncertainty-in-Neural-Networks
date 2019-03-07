@@ -2,6 +2,16 @@ import bayes
 from utils import Flatten
 import torch.nn as nn
 
+class MLP(nn.Sequential):
+    def __init__(self, inputs, outputs, hidden=100):
+        super().__init__(
+            Flatten(inputs),
+            nn.Linear(inputs, hidden),
+            nn.Softplus(),
+            #nn.Linear(hidden, hidden),
+            #nn.Softplus(),
+            nn.Linear(hidden, outputs))
+    
 class AlexNet(nn.Sequential):
     def __init__(self, inputs=3, outputs = 10):
         super().__init__(
