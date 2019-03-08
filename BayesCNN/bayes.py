@@ -19,8 +19,8 @@ class BayesWrapper:
         self.name = name # network name
         self.net = net
         self.bayes_params = [(name,
-                              torch.rand_like(p)*.1, #mu
-                              torch.zeros_like(p)-3,#rho,
+                              torch.randn_like(p)*.05, #mu
+                              torch.randn_like(p)*.05-5,#rho,
                               torch.zeros_like(p),#sigma
                               torch.zeros_like(p)) #epsilon (buffer)
                              for name,p in self.net.state_dict().items()]
