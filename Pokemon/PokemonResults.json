@@ -1,39 +1,26 @@
 {
-<<<<<<< HEAD
     "newData": {
-        "Aqua": "[[\"Water\",82],[\"Normal\",7],[\"Flying\",5],[\"Psychic\",3],[\"Grass\",2],[\"Rock\",1]]",
-        "Chocolate": "[[\"Normal\",46],[\"Flying\",27],[\"Water\",19],[\"Psychic\",3],[\"Bug\",2],[\"Grass\",2],[\"Fire\",1]]",
-        "Gold": "[[\"Flying\",35],[\"Normal\",35],[\"Grass\",12],[\"Water\",10],[\"Psychic\",5],[\"Bug\",3]]",
-        "Lime": "[[\"Grass\",45],[\"Flying\",33],[\"Normal\",10],[\"Psychic\",8],[\"Water\",3],[\"Bug\",1]]",
-        "Magenta": "[[\"Water\",91],[\"Normal\",8],[\"Flying\",1]]",
-        "Maroon": "[[\"Water\",40],[\"Flying\",32],[\"Normal\",19],[\"Grass\",5],[\"Bug\",2],[\"Fire\",1],[\"Ground\",1]]",
-        "Navy": "[[\"Water\",94],[\"Normal\",6]]",
-        "Olive": "[[\"Flying\",35],[\"Normal\",31],[\"Grass\",15],[\"Water\",12],[\"Psychic\",4],[\"Bug\",3]]",
-        "Orange": "[[\"Normal\",44],[\"Flying\",31],[\"Water\",13],[\"Grass\",7],[\"Psychic\",4],[\"Bug\",1]]",
-        "Silver": "[[\"Water\",59],[\"Normal\",28],[\"Flying\",11],[\"Psychic\",2]]"
+        "Aqua": "[[\"Water\",75],[\"Grass\",13],[\"Psychic\",8],[\"Normal\",3],[\"Fairy\",1]]",
+        "Chocolate": "[[\"Normal\",42],[\"Flying\",22],[\"Bug\",11],[\"Psychic\",9],[\"Fire\",8],[\"Rock\",3],[\"Grass\",3],[\"Water\",2]]",
+        "Gold": "[[\"Normal\",49],[\"Fire\",15],[\"Flying\",14],[\"Bug\",9],[\"Grass\",7],[\"Psychic\",3],[\"Electric\",3]]",
+        "Lime": "[[\"Grass\",100]]",
+        "Magenta": "[[\"Water\",84],[\"Normal\",12],[\"Flying\",3],[\"Psychic\",1]]",
+        "Maroon": "[[\"Flying\",34],[\"Normal\",25],[\"Water\",11],[\"Fire\",10],[\"Grass\",9],[\"Bug\",7],[\"Psychic\",3],[\"Rock\",1]]",
+        "Navy": "[[\"Water\",91],[\"Grass\",5],[\"Poison\",1],[\"Dark\",1],[\"Flying\",1],[\"Psychic\",1]]",
+        "Olive": "[[\"Grass\",41],[\"Normal\",23],[\"Flying\",23],[\"Fire\",5],[\"Psychic\",4],[\"Bug\",3],[\"Rock\",1]]",
+        "Orange": "[[\"Normal\",44],[\"Flying\",20],[\"Fire\",12],[\"Bug\",11],[\"Grass\",7],[\"Psychic\",6]]",
+        "Silver": "[[\"Water\",40],[\"Normal\",36],[\"Psychic\",15],[\"Flying\",5],[\"Rock\",1],[\"Grass\",1],[\"Poison\",1],[\"Bug\",1]]"
     },
     "original": {
-        "Black": "[[\"Water\",40],[\"Flying\",28],[\"Normal\",19],[\"Grass\",11],[\"Psychic\",2]]",
+        "Black": "[[\"Grass\",55],[\"Water\",21],[\"Flying\",17],[\"Normal\",2],[\"Bug\",2],[\"Ground\",1],[\"Psychic\",1],[\"Poison\",1]]",
         "Blue": "[[\"Water\",100]]",
-        "Brown": "[[\"Water\",38],[\"Normal\",31],[\"Flying\",23],[\"Bug\",3],[\"Psychic\",3],[\"Grass\",2]]",
-        "Green": "[[\"Grass\",32],[\"Flying\",28],[\"Normal\",17],[\"Water\",15],[\"Psychic\",6],[\"Bug\",2]]",
-        "Grey": "[[\"Water\",65],[\"Normal\",25],[\"Flying\",10]]",
-        "Pink": "[[\"Water\",66],[\"Normal\",23],[\"Flying\",7],[\"Psychic\",3],[\"Grass\",1]]",
-        "Purple": "[[\"Water\",74],[\"Normal\",18],[\"Flying\",7],[\"Psychic\",1]]",
-        "Red": "[[\"Flying\",43],[\"Normal\",32],[\"Water\",17],[\"Bug\",3],[\"Psychic\",3],[\"Grass\",1],[\"Fire\",1]]",
-        "White": "[[\"Water\",66],[\"Normal\",27],[\"Psychic\",4],[\"Flying\",3]]",
-        "Yellow": "[[\"Flying\",35],[\"Normal\",31],[\"Grass\",19],[\"Water\",11],[\"Psychic\",2],[\"Bug\",2]]"
+        "Brown": "[[\"Flying\",40],[\"Normal\",32],[\"Fire\",11],[\"Psychic\",6],[\"Water\",5],[\"Bug\",4],[\"Rock\",1],[\"Grass\",1]]",
+        "Green": "[[\"Grass\",99],[\"Water\",1]]",
+        "Grey": "[[\"Normal\",32],[\"Water\",31],[\"Psychic\",14],[\"Flying\",12],[\"Grass\",11]]",
+        "Pink": "[[\"Normal\",53],[\"Water\",19],[\"Psychic\",18],[\"Flying\",6],[\"Fairy\",2],[\"Fire\",1],[\"Poison\",1]]",
+        "Purple": "[[\"Water\",69],[\"Normal\",17],[\"Flying\",13],[\"Ground\",1]]",
+        "Red": "[[\"Flying\",37],[\"Normal\",36],[\"Fire\",20],[\"Bug\",6],[\"Psychic\",1]]",
+        "White": "[[\"Normal\",39],[\"Water\",37],[\"Psychic\",18],[\"Flying\",3],[\"Fairy\",2],[\"Bug\",1]]",
+        "Yellow": "[[\"Normal\",34],[\"Grass\",17],[\"Bug\",15],[\"Fire\",14],[\"Flying\",12],[\"Electric\",5],[\"Psychic\",3]]"
     }
-=======
-    "Black": "[[\"Grass\",100]]",
-    "Blue": "[[\"Water\",100]]",
-    "Brown": "[[\"Normal\",71],[\"Flying\",25],[\"Fire\",2],[\"Ground\",1],[\"Bug\",1]]",
-    "Green": "[[\"Grass\",100]]",
-    "Grey": "[[\"Normal\",30],[\"Steel\",25],[\"Flying\",23],[\"Poison\",6],[\"Bug\",5],[\"Ground\",5],[\"Water\",3],[\"Rock\",1],[\"Grass\",1],[\"Psychic\",1]]",
-    "Pink": "[[\"Steel\",41],[\"Normal\",32],[\"Bug\",18],[\"Electric\",5],[\"Water\",3],[\"Flying\",1]]",
-    "Purple": "[[\"Water\",48],[\"Flying\",25],[\"Normal\",19],[\"Poison\",6],[\"Ground\",2]]",
-    "Red": "[[\"Fire\",96],[\"Flying\",3],[\"Normal\",1]]",
-    "White": "[[\"Steel\",77],[\"Normal\",9],[\"Electric\",9],[\"Bug\",5]]",
-    "Yellow": "[[\"Electric\",50],[\"Bug\",37],[\"Fire\",9],[\"Normal\",4]]"
->>>>>>> beba8d97e3be2d3316cce119e29e66b7a2a3e7fd
 }
