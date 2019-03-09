@@ -54,8 +54,8 @@ def generatePokemonData(NUM_BATCHES):
 def train(net, optimizer, data, target, NUM_BATCHES):
     for i in range(NUM_BATCHES):
         net.zero_grad()
-        x = torch.tensor(data[i].values.astype(np.float32))
-        y = torch.tensor(target[i].values.astype(np.int)).view(-1)
+        x = torch.tensor(data[i].values.astype(np.float32)).to(DEVICE)
+        y = torch.tensor(target[i].values.astype(np.int)).view(-1).to(DEVICE)
         loss = net.BBB_loss(x, y)
         loss.backward()
         optimizer.step()
@@ -105,11 +105,11 @@ def test(net, colors_pokemon, pokemonType, TEST_SAMPLES):
     results = {}
     for color in colors_pokemon:
         r,g,b = colors.to_rgb(color)
-        temp = torch.tensor(np.asarray([r,g,b]).astype(np.float32))
+        temp = torch.tensor(np.asarray([r,g,b]).astype(np.float32)).to(DEVICE)
         outputs = np.zeros(100)
         for i in range(TEST_SAMPLES):
             output = net.forward(temp)
-            output = output.max(1, keepdim=True)[1].data.numpy()
+            output = output.max(1, keepdim=True)[1].data.cpu().numpy()
             outputs[i] = output[0][0]
         outputs = pd.DataFrame(outputs)
         outputs = outputs[0].value_counts()
@@ -124,7 +124,7 @@ def test(net, colors_pokemon, pokemonType, TEST_SAMPLES):
     return results
 
 
-TRAIN_EPOCHS = 5
+TRAIN_EPOCHS = 500
 TEST_SAMPLES = 100
 NUM_BATCHES = 10
 #https://www.rapidtables.com/web/color/RGB_Color.html#color-table
