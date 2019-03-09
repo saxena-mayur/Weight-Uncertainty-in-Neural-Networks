@@ -1,5 +1,7 @@
 import csv
 from matplotlib import colors
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import pandas as pd
 import sys
 sys.path.append('../')
@@ -62,7 +64,7 @@ def train(net, optimizer, data, target, NUM_BATCHES):
 
 def trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES):
     #Hyperparameter setting
-    SAMPLES = 10
+    SAMPLES = 5
     BATCH_SIZE = train_x[0].shape[0]
     CLASSES = 18
     INPUT_SIZE = 3
@@ -80,7 +82,7 @@ def trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES):
     #Declare Network
     net = BayesianNetwork(inputSize = INPUT_SIZE,\
                         CLASSES = CLASSES, \
-                        layers=np.array([400,400]), \
+                        layers=np.array([100,100]), \
                         activations = np.array(['relu','relu','softmax']), \
                         SAMPLES = SAMPLES, \
                         BATCH_SIZE = BATCH_SIZE,\
@@ -106,38 +108,53 @@ def test(net, colors_pokemon, pokemonType, TEST_SAMPLES):
     for color in colors_pokemon:
         r,g,b = colors.to_rgb(color)
         temp = torch.tensor(np.asarray([r,g,b]).astype(np.float32)).to(DEVICE)
-        outputs = np.zeros(100)
+        result = []
         for i in range(TEST_SAMPLES):
             output = net.forward(temp)
-            output = output.max(1, keepdim=True)[1].data.cpu().numpy()
-            outputs[i] = output[0][0]
-        outputs = pd.DataFrame(outputs)
-        outputs = outputs[0].value_counts()
-        outputs = pd.DataFrame(outputs)
-        outputs['Type'] = outputs.index.values.astype(np.int)
-        outputs['Count'] = outputs[0]
-        outputs = outputs.drop([0],axis=1)
-        outputs = outputs.replace({'Type': pokemonType})
-        #results[color] = { 'RGB': [r,g,b],'Type': outputs.to_json(orient='values')}
-        results[color] = outputs.to_json(orient='values')
+            a = output[0].data.cpu().numpy()
+            result.append(np.exp(a) / (np.exp(a)).sum())
+        result = np.mean(result, axis = 0)
+        result = pd.DataFrame(result)
+        result['Type'] = result.index.values.astype(np.int)
+        result['Probability'] = result[0]
+        result = result.drop([0],axis=1)
+        result = result.replace({'Type': pokemonType})
+        result = result.sort_values(by='Probability', ascending=False)
+        results[color] = result.to_json(orient='values')
     
     return results
 
 
-TRAIN_EPOCHS = 500
-TEST_SAMPLES = 100
+TRAIN_EPOCHS = 50
+TEST_SAMPLES = 10
 NUM_BATCHES = 10
 #https://www.rapidtables.com/web/color/RGB_Color.html#color-table
 newColors = ['Orange','Lime','Maroon','Silver','Navy','Magenta','Aqua','Gold','Chocolate','Olive']
 
-print('Generating Data set.',)
-
+print('Generating Data set.')
 train_x,train_y,pokemonType, pokemonColors = generatePokemonData(NUM_BATCHES)
+
+def displayColours(pokemonColors,newColors):
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+
+    for col in pokemonColors:
+        r,g,b = colors.to_rgb(col)
+        ax.scatter(r, g, b, c=col)
+    for col in newColors:
+        r,g,b = colors.to_rgb(col)
+        ax.scatter(r, g, b, c=col,marker="*")
+    plt.show()
+
+#displayColours(pokemonColors,newColors)
+
 net = trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES)
 
+print('Testing begins!')
 results = {}
 results['original'] = test(net, pokemonColors, pokemonType, TEST_SAMPLES)
 results['newData'] = test(net, newColors, pokemonType, TEST_SAMPLES)
 
 with open('PokemonResults.json', 'w') as fp:
         json.dump(results, fp, indent=4, sort_keys=True)
+print('Testing ends! Results saved.')
