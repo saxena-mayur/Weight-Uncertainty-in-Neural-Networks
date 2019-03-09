@@ -17,7 +17,7 @@ def train(net, optimizer, data, target, NUM_BATCHES):
 
 #Hyperparameter setting
 TRAIN_EPOCHS = 500
-SAMPLES = 10
+SAMPLES = 5
 TEST_SAMPLES = 5
 BATCH_SIZE = 100
 NUM_BATCHES = 10
@@ -95,7 +95,8 @@ plt.plot(x_test, y_test, c='grey', label='truth')
 plt.legend()
 plt.tight_layout()
 plt.savefig('./Results/Regression.png')
+plt.savefig('./Results/Regression.eps', format='eps', dpi=1000)
 #plt.show()
 
 #Save the trained model
-#torch.save(net.state_dict(), './Models/Regression.pth')
+torch.save(net.state_dict(), './Models/Regression.pth')
