@@ -64,7 +64,7 @@ def train(net, optimizer, data, target, NUM_BATCHES):
 
 def trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES):
     #Hyperparameter setting
-    SAMPLES = 10
+    SAMPLES = 20
     BATCH_SIZE = train_x[0].shape[0]
     CLASSES = 18
     INPUT_SIZE = 3
@@ -82,7 +82,7 @@ def trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES):
     #Declare Network
     net = BayesianNetwork(inputSize = INPUT_SIZE,\
                         CLASSES = CLASSES, \
-                        layers=np.array([100,100,100]), \
+                        layers=np.array([200,200,200]), \
                         activations = np.array(['relu','relu','relu','softmax']), \
                         SAMPLES = SAMPLES, \
                         BATCH_SIZE = BATCH_SIZE,\
@@ -126,8 +126,8 @@ def test(net, colors_pokemon, pokemonType, TEST_SAMPLES):
     return results
 
 
-TRAIN_EPOCHS = 500
-TEST_SAMPLES = 50
+TRAIN_EPOCHS = 1000
+TEST_SAMPLES = 10
 NUM_BATCHES = 10
 #https://www.rapidtables.com/web/color/RGB_Color.html#color-table
 newColors = ['Orange','Lime','Maroon','Silver','Navy','Magenta','Aqua','Gold','Chocolate','Olive']
@@ -159,3 +159,6 @@ results['newData'] = test(net, newColors, pokemonType, TEST_SAMPLES)
 with open('PokemonResults.json', 'w') as fp:
         json.dump(results, fp, indent=4, sort_keys=True)
 print('Testing ends! Results saved.')
+
+#Save the trained model
+torch.save(net.state_dict(), './Model.pth')
