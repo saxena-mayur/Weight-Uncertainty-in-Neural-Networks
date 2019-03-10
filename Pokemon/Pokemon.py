@@ -135,19 +135,8 @@ newColors = ['Orange','Lime','Maroon','Silver','Navy','Magenta','Aqua','Gold','C
 print('Generating Data set.')
 train_x,train_y,pokemonType, pokemonColors = generatePokemonData(NUM_BATCHES)
 
-def displayColours(pokemonColors,newColors):
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
-
-    for col in pokemonColors:
-        r,g,b = colors.to_rgb(col)
-        ax.scatter(r, g, b, c=col)
-    for col in newColors:
-        r,g,b = colors.to_rgb(col)
-        ax.scatter(r, g, b, c=col,marker="*")
-    plt.show()
-
-#displayColours(pokemonColors,newColors)
+with open('PokemonTypeMap.json', 'w') as fp:
+        json.dump(pokemonType, fp, indent=4, sort_keys=True)
 
 net = trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES)
 

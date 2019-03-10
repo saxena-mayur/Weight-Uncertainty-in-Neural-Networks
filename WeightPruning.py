@@ -32,7 +32,7 @@ model = BayesianNetwork(inputSize=INPUT_SIZE,
                         SIGMA_1=SIGMA_1,
                         SIGMA_2=SIGMA_2).to(DEVICE)
 
-model.load_state_dict(torch.load('./Models/BBB_MNIST_400_5samples.pth'))
+model.load_state_dict(torch.load('./Models/BBB_MNIST_400_5samples.pth', map_location='cpu'))
 model.eval()
 
 def getThreshold(model,buckets):
