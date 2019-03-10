@@ -8,12 +8,12 @@ from sklearn import preprocessing
 from tqdm import tqdm
 
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 from BayesBackpropagation import *
 
 #### CUDA NOT YET IMPLEMENTED - DISABLE IN BayesBackpropagation.py ###
 
-NB_STEPS = int(sys.argv[1])
+NB_STEPS = 10000
 print('running for {0} steps'.format(NB_STEPS))
 
 # Import data from file
@@ -78,83 +78,99 @@ SIGMA_2 = torch.FloatTensor([math.exp(-6)])
 
 Var = lambda x, dtype=torch.FloatTensor: Variable(torch.from_numpy(x).type(dtype))
 
+bufferX, bufferY = init_buffer()
+
 class MushroomNet():
-    def __init__(self, label='MushNet'):
+    def __init__(self, label = 'MushNet', n_weight_sampling=2):
         self.label = label
+        self.n_weight_sampling = n_weight_sampling
         self.epsilon = 0
         self.net = None
-        self.bufferX, self.bufferY = init_buffer()
         self.loss, self.optimizer = None, None
         self.cum_regrets = [0]
+        self.bufferX = np.copy(bufferX)
+        self.bufferY = np.copy(bufferY)
     
-    def expected_rewards(self, context, k=2):
-        c_eat = Var(np.concatenate((context, [1, 0])))
-        c_reject = Var(np.concatenate((context, [0, 1])))
-        with torch.no_grad():
-            r_eat = np.mean([self.net.forward(c_eat).numpy().reshape(1)[0] for _ in range(k)])
-            r_reject = np.mean([self.net.forward(c_reject).numpy().reshape(1)[0] for _ in range(k)])
-        return r_reject, r_eat
-
-    def try_(self, mushroom):
+    # Use NN to decide next action
+    def try_ (self, mushroom):
+        samples = self.n_weight_sampling
         context, edible = x[mushroom], y[mushroom]
-        r_reject, r_eat = self.expected_rewards(context, k=2)
+        try_eat = Var(np.concatenate((context, [1, 0])))
+        try_reject = Var(np.concatenate((context, [0, 1])))
+        
+        # Calculate rewards using model
+        with torch.no_grad():
+            r_eat = np.mean([self.net.forward(try_eat).numpy() for _ in range(samples)])
+            r_reject = np.mean([self.net.forward(try_reject).numpy() for _ in range(samples)])
+        
+        # Take random action for epsilon greedy agents, calculate agent's reward
         eaten = r_eat > r_reject
         if np.random.rand()<self.epsilon:
             eaten = (np.random.rand()<.5)
-        reward = get_reward(eaten, edible)
-        action = [1, 0] if eaten else [0, 1]
-        self.bufferX.append(np.concatenate((context, action)))
-        self.bufferY.append(reward)
-        rg = oracle_reward(edible) - reward
-        self.cum_regrets.append(self.cum_regrets[-1]+rg)
-    
+        agent_reward = get_reward(eaten, edible)
+        
+        # Get rewards and update buffer
+        if eaten:
+            action = [1, 0]
+        else:
+            action = [0, 1]
+        bufferX.append(np.concatenate((context, action)))
+        bufferY.append(agent_reward)
+        
+        # Calculate regret
+        oracle = oracle_reward(edible)
+        regret = oracle - agent_reward
+        self.cum_regrets.append(self.cum_regrets[-1]+regret)
+
+    # Feed next mushroom
     def update(self, mushroom):
         self.try_(mushroom)
         bX = Var(np.array(self.bufferX[-4096:]))
         bY = Var(np.array(self.bufferY[-4096:]))
         for idx in np.split(np.random.permutation(range(4096)), 64):
-            self.net.train()
             self.net.zero_grad()
             self.loss(bX[idx], bY[idx]).backward()
             self.optimizer.step()
             
+# Class for BBB agent
 class BBB_MNet(MushroomNet):
     def __init__(self, label):
         super().__init__(label)
         self.net = BayesianNetwork(inputSize = x.shape[1]+2,
-                          CLASSES = 1, 
-                          layers=np.array([100,100]), 
-                          activations = np.array(['relu','relu','none']), 
-                          SAMPLES = 1, 
-                          BATCH_SIZE = 64,
-                          NUM_BATCHES = 64,
-                          hasScalarMixturePrior=True,
-                          PI=PI,
-                          SIGMA_1 = SIGMA_1,
-                          SIGMA_2 = SIGMA_2
-                          ).to(DEVICE)
-        self.optimizer = optim.Adam(self.net.parameters())
+                       CLASSES = 1,
+                       layers=np.array([100,100]),
+                       activations = np.array(['relu','relu','none']),
+                       SAMPLES = 1,
+                       BATCH_SIZE = 64,
+                       NUM_BATCHES = 64,
+                       hasScalarMixturePrior=True,
+                       PI=PI,
+                       SIGMA_1 = SIGMA_1,
+                       SIGMA_2 = SIGMA_2
+                       ).to(DEVICE)
+        self.optimizer = optim.Adam(self.net.parameters(), lr = 0.5)
         self.loss = lambda data, target:self.net.BBB_loss(data, target)
-        
-        
 
+
+# Class for Greedy agents
 class EpsGreedyMlp(MushroomNet):
-    def __init__(self, label, epsilon=0.):
-        super().__init__(label)
+    def __init__(self, epsilon=0, **kwargs):
+        super().__init__(**kwargs)
+        self.n_weight_sampling = 1
         self.epsilon = epsilon
         self.net = nn.Sequential(
         nn.Linear(x.shape[1]+2, 100), nn.ReLU(),
         nn.Linear(100, 100), nn.ReLU(),
         nn.Linear(100, 1))
         self.bufferX, self.bufferY = init_buffer()
-        self.optimizer = optim.Adam(self.net.parameters())
+        self.optimizer = optim.SGD(self.net.parameters(), lr = 0.001)
         self.mse = nn.MSELoss()
         self.loss = lambda data, target: self.mse(self.net.forward(data), target)
 
-mushroom_nets = {'bbb':BBB_MNet(label = 'Bayes By BackProp'),
-                 'e0':EpsGreedyMlp(epsilon = 0., label = 'Greedy'),
-                 'e1':EpsGreedyMlp(epsilon = 0.01, label = '1% Greedy'),
-                 'e5':EpsGreedyMlp(epsilon = 0.05, label = '5 %Greedy')}
+mushroom_nets = {'bbb':BBB_MNet(label = 'BBB'),
+    'e0':EpsGreedyMlp(epsilon=0, label = 'Greedy'),
+    'e1':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy'),
+    'e5':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy')}
 
 
 for _ in tqdm(range(NB_STEPS)):
