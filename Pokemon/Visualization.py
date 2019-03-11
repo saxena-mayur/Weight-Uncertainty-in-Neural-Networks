@@ -26,13 +26,13 @@ def loadPokemonModel(filename):
         SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
     INPUT_SIZE = 3
 
-    LAYERS = np.array([200,200,200])
+    LAYERS = np.array([200,200])
     NUM_BATCHES = 0
-    ACTIVATION_FUNCTIONS = np.array(['relu','relu','relu','softmax'])
+    ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax'])
     net = BayesianNetwork(inputSize = INPUT_SIZE,\
                             CLASSES = CLASSES, \
-                            layers=np.array([200,200,200]), \
-                            activations = np.array(['relu','relu','relu','softmax']), \
+                            layers=LAYERS, \
+                            activations = ACTIVATION_FUNCTIONS, \
                             SAMPLES = SAMPLES, \
                             BATCH_SIZE = BATCH_SIZE,\
                             NUM_BATCHES = NUM_BATCHES,\
@@ -74,34 +74,43 @@ pokemonType = loadPokemonTypeMap()
 
 #Initialize the HSV values
 H = np.arange(0, 1.01, 0.01)
-S = 1
-V = 1
+S = np.arange(0, 1.01, 0.25)
+V = np.arange(0, 1.01, 0.25)
 
-labels = [] #To store Pokemon's type
-col = [] #To store Pokemon's colour in RGB
-variance = [] #To store standard deviation for a colour
+def generateGraph(H,s,v):
+    labels = [] #To store Pokemon's type
+    col = [] #To store Pokemon's colour in RGB
+    variance = [] #To store standard deviation for a colour
 
-TEST_SAMPLES= 10
+    TEST_SAMPLES= 10
 
-for h in H:
-    r,g,b= colorsys.hsv_to_rgb(h, S, V) #convert hsv to rgb
-    col.append((r,g,b))
-    temp = test(net,r,g,b,pokemonType,TEST_SAMPLES)
-    labels.append(temp['Type'])
-    variance.append("{0:.4f}".format(temp['Std']))
-sizes = np.ones(len(labels)) #Set equal weights to every color in pie chat
-r = pd.DataFrame({'Type':labels,'Weight':sizes,'Colour':col,'Hue':H,'Std':variance})
-r = r.sort_values(by=['Hue'], ascending=False) #To form the spectrum
-r = r.drop(['Hue'],axis=1)
-r = r.drop_duplicates()
+    for h in H:
+        r,g,b= colorsys.hsv_to_rgb(h, s, v) #convert hsv to rgb
+        col.append((r,g,b))
+        temp = test(net,r,g,b,pokemonType,TEST_SAMPLES)
+        labels.append(temp['Type'])
+        variance.append("{0:.4f}".format(temp['Std']))
+    sizes = np.ones(len(labels)) #Set equal weights to every color in pie chat
+    r = pd.DataFrame({'Type':labels,'Weight':sizes,'Colour':col,'Hue':H,'Std':variance})
+    r = r.sort_values(by=['Hue'], ascending=False) #To form the spectrum
+    r = r.drop(['Hue'],axis=1)
+    r = r.drop_duplicates()
 
-#Type classification graph
-patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['Type'],rotatelabels=True)
-plt.axis('equal')
-plt.savefig('./Type.png')
+    #Type classification graph
+    #plt.figure(1)
+    patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['Type'],rotatelabels=True)
+    plt.axis('equal')
+    plt.savefig('./Results/Type_S='+str(s)+'_V='+str(v)+'.png')
+    plt.clf()
+    
+    #Standard deviation fluctuation graph
+    #plt.figure(2)
+    patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['Std'],rotatelabels=True)
+    plt.axis('equal')
+    plt.savefig('./Results/Standard deviation_S='+str(s)+'_V='+str(v)+'.png')
+    plt.clf()
+    
 
-#Standard deviation fluctuation graph
-plt.figure(2)
-patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['Std'],rotatelabels=True)
-plt.axis('equal')
-plt.savefig('./Standard deviation.png')
+for s in S:
+    for v in V:
+        generateGraph(H,s,v)

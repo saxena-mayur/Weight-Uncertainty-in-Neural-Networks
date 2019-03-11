@@ -18,7 +18,8 @@ def generatePokemonData(NUM_BATCHES):
         line_count = 0
         for row in csv_reader:
             if line_count != 0:
-                r,g,b = colors.to_rgb(row[13])
+                noise = np.random.normal(0, 0.02, size=3)
+                r,g,b = colors.to_rgb(row[13]) + noise
                 if row[3]!="":
                     data.append([row[1],row[13],r,g,b,row[3]])
                     data.append([row[1],row[13],r,g,b,row[2]])
@@ -82,8 +83,8 @@ def trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES):
     #Declare Network
     net = BayesianNetwork(inputSize = INPUT_SIZE,\
                         CLASSES = CLASSES, \
-                        layers=np.array([200,200,200]), \
-                        activations = np.array(['relu','relu','relu','softmax']), \
+                        layers=np.array([200,200]), \
+                        activations = np.array(['relu','relu','softmax']), \
                         SAMPLES = SAMPLES, \
                         BATCH_SIZE = BATCH_SIZE,\
                         NUM_BATCHES = NUM_BATCHES,\
@@ -126,7 +127,7 @@ def test(net, colors_pokemon, pokemonType, TEST_SAMPLES):
     return results
 
 
-TRAIN_EPOCHS = 1000
+TRAIN_EPOCHS = 500
 TEST_SAMPLES = 10
 NUM_BATCHES = 10
 #https://www.rapidtables.com/web/color/RGB_Color.html#color-table
