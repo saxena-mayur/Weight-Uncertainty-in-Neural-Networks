@@ -10,16 +10,26 @@ import math
 import torch.optim as optim
 import json
 
+def loadPokemonColours():
+    with open('median_values.json') as f:
+        data = json.load(f)
+    return data
+
 def generatePokemonData(NUM_BATCHES):
 
+    colourMap = loadPokemonColours()
     data = []
     with open('pokemon.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
         for row in csv_reader:
             if line_count != 0:
-                noise = np.random.normal(0, 0.02, size=3)
-                r,g,b = colors.to_rgb(row[13]) + noise
+                #noise = np.random.normal(0, 0.02, size=3)
+                col = colourMap[row[0]]
+                r = col['R']/255.
+                g = col['G']/255.
+                b = col['B']/255.
+                #r,g,b = colors.to_rgb(row[13]) + noise
                 if row[3]!="":
                     data.append([row[1],row[13],r,g,b,row[3]])
                     data.append([row[1],row[13],r,g,b,row[2]])
@@ -83,8 +93,8 @@ def trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES):
     #Declare Network
     net = BayesianNetwork(inputSize = INPUT_SIZE,\
                         CLASSES = CLASSES, \
-                        layers=np.array([200,200]), \
-                        activations = np.array(['relu','relu','softmax']), \
+                        layers=np.array([100,100,100]), \
+                        activations = np.array(['relu','relu','relu','softmax']), \
                         SAMPLES = SAMPLES, \
                         BATCH_SIZE = BATCH_SIZE,\
                         NUM_BATCHES = NUM_BATCHES,\
@@ -141,6 +151,7 @@ with open('PokemonTypeMap.json', 'w') as fp:
 
 net = trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES)
 
+"""
 print('Testing begins!')
 results = {}
 results['original'] = test(net, pokemonColors, pokemonType, TEST_SAMPLES)
@@ -149,6 +160,7 @@ results['newData'] = test(net, newColors, pokemonType, TEST_SAMPLES)
 with open('PokemonResults.json', 'w') as fp:
         json.dump(results, fp, indent=4, sort_keys=True)
 print('Testing ends! Results saved.')
+"""
 
 #Save the trained model
 torch.save(net.state_dict(), './Model.pth')

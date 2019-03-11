@@ -26,9 +26,9 @@ def loadPokemonModel(filename):
         SIGMA_2 = torch.cuda.FloatTensor([math.exp(-6)])
     INPUT_SIZE = 3
 
-    LAYERS = np.array([200,200])
+    LAYERS = np.array([100,100,100])
     NUM_BATCHES = 0
-    ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax'])
+    ACTIVATION_FUNCTIONS = np.array(['relu','relu','relu','softmax'])
     net = BayesianNetwork(inputSize = INPUT_SIZE,\
                             CLASSES = CLASSES, \
                             layers=LAYERS, \
@@ -74,7 +74,7 @@ pokemonType = loadPokemonTypeMap()
 
 #Initialize the HSV values
 H = np.arange(0, 1.01, 0.01)
-S = np.arange(0, 1.01, 0.25)
+S = [1]
 V = np.arange(0, 1.01, 0.25)
 
 def generateGraph(H,s,v):
