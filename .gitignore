@@ -1,6 +1,5 @@
 fmnist/
 mnist/
-results/
 __pycache__/
 .ipynb_checkpoints/
 data/mnist/
