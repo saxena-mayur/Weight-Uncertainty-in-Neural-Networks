@@ -81,7 +81,49 @@ neural networks. The algorithms we list in the next section provide tractable
 *approximations* that can be used in combination with Thompson Sampling to solve
 the contextual bandit problem.
 
-## Algorithm
+## Algorithms
+
+The Deep Bayesian Bandits library includes the following algorithms (see the
+[paper](https://arxiv.org/abs/1802.09127) for further details):
+
+1.  **Linear Algorithms**. As a powerful baseline, we provide linear algorithms.
+    In particular, we focus on the exact Bayesian linear regression
+    implementation, while it is easy to derive the greedy OLS version (possibly,
+    with epsilon-greedy exploration). The algorithm is implemented in
+    *linear_full_posterior_sampling.py*, and it is instantiated as follows:
+
+    ```
+        linear_full = LinearFullPosteriorSampling('MyLinearTS', my_hparams)
+    ```
+
+2.  **Neural Linear**. We introduce an algorithm we call Neural Linear, which
+    operates by learning a neural network to map contexts to rewards for each
+    action, and ---simultaneously--- it updates a Bayesian linear regression in
+    the last layer (i.e., the one that maps the final representation **z** to
+    the rewards **r**). Thompson Sampling samples the linear parameters
+    &beta;<sub>i</sub> for each action *i*, but keeps the network that computes the
+    representation. Then, both parts (network and Bayesian linear regression)
+    are updated, possibly at different frequencies. The algorithm is implemented
+    in *neural_linear_sampling.py*, and we create an algorithm instance like
+    this:
+
+    ```
+        neural_linear = NeuralLinearPosteriorSampling('MyNLinear', my_hparams)
+    ```
+
+3.  **Neural Greedy**. Another standard benchmark is to train a neural network
+    that maps contexts to rewards, and at each time *t* just acts greedily
+    according to the current model. In particular, this approach does *not*
+    explicitly use Thompson Sampling. However, due to stochastic gradient
+    descent, there is still some randomness in its output. It is
+    straight-forward to add epsilon-greedy exploration to choose random
+    actions with probability &epsilon; &isin; (0, 1). The algorithm is
+    implemented in *neural_bandit_model.py*, and it is used together with
+    *PosteriorBNNSampling* (defined in *posterior_bnn_sampling.py*) by calling:
+
+    ```
+      neural_greedy = PosteriorBNNSampling('MyNGreedy', my_hparams, 'RMSProp')
+    ```
 
 4.  **Stochastic Variational Inference**, Bayes by Backpropagation. We implement
     a Bayesian neural network by modeling each individual weight posterior as a
@@ -102,6 +144,197 @@ the contextual bandit problem.
     ```
         bbb = PosteriorBNNSampling('myBBB', my_hparams, 'Variational')
     ```
+
+5.  **Expectation-Propagation**, Black-box alpha-divergence minimization.
+    The family of expectation-propagation algorithms is based on the message
+    passing framework . They iteratively approximate the posterior by updating a
+    single approximation factor (or site) at a time, which usually corresponds
+    to the likelihood of one data point. We focus on methods that directly
+    optimize the global EP objective via stochastic gradient descent, as, for
+    instance, Power EP. For further details see original paper below.
+
+    See [Black-box alpha-divergence
+    Minimization](https://arxiv.org/abs/1511.03243).
+
+    We create an instance of the algorithm like this:
+
+    ```
+        bb_adiv = PosteriorBNNSampling('MyEP', my_hparams, 'AlphaDiv')
+    ```
+
+6.  **Dropout**. Dropout is a training technique where the output of each neuron
+    is independently zeroed out with probability *p* at each forward pass.
+    Once the network has been trained, dropout can still be used to obtain a
+    distribution of predictions for a specific input. Following the best action
+    with respect to the random dropout prediction can be interpreted as an
+    implicit form of Thompson sampling. The code for dropout is the same as for
+    Neural Greedy (see above), but we need to set two hyper-parameters:
+    *use_dropout=True* and *keep_prob=p* where *p* takes the desired value in
+    (0, 1). Then:
+
+    ```
+        dropout = PosteriorBNNSampling('MyDropout', my_hparams, 'RMSProp')
+    ```
+
+7.  **Monte Carlo Methods**. To be added soon.
+
+8.  **Bootstrapped Networks**. This algorithm trains simultaneously and in
+    parallel **q** neural networks based on different datasets D<sub>1</sub>, ..., D<sub>q</sub>. The way those datasets are collected is by adding each new collected
+    datapoint (X<sub>t</sub>, a<sub>t</sub>, r<sub>t</sub>) to each dataset *D<sub>i</sub>* independently and with
+    probability p &isin; (0, 1]. Therefore, the main hyperparameters of the
+    algorithm are **(q, p)**. In order to choose an action for a new context,
+    one of the **q** networks is first selected with uniform probability (i.e.,
+    *1/q*). Then, the best action according to the *selected* network is
+    played.
+
+    See [Deep Exploration via Bootstrapped
+    DQN](https://arxiv.org/abs/1602.04621).
+
+    The algorithm is implemented in *bootstrapped_bnn_sampling.py*, and we
+    instantiate it as (where *my_hparams* contains both **q** and **p**):
+
+    ```
+        bootstrap = BootstrappedBNNSampling('MyBoot', my_hparams)
+    ```
+
+9.  **Parameter-Noise**. Another approach to approximate a distribution over
+    neural networks (or more generally, models) that map contexts to rewards,
+    consists in randomly perturbing a point estimate trained by Stochastic
+    Gradient Descent on the data. The Parameter-Noise algorithm uses a heuristic
+    to control the amount of noise &sigma;<sub>t</sub><sup>2</sup> it adds independently to the
+    parameters representing a neural network: &theta;<sub>t</sub><sup>'</sup> = &theta;<sub>t</sub> + &epsilon; where
+    &epsilon; &sim; N(0, &sigma;<sub>t</sub><sup>2</sup> Id).
+    After using &theta;<sub>t</sub><sup>'</sup> for decision making, the following SGD
+    training steps start again from &theta;<sub>t</sub>. The key hyperparameters to set
+    are those controlling the noise heuristic.
+
+    See [Parameter Space Noise for
+    Exploration](https://arxiv.org/abs/1706.01905).
+
+    The algorithm is implemented in *parameter_noise_sampling.py*, and we create
+    an instance by calling:
+
+    ```
+        parameter_noise = ParameterNoiseSampling('MyParamNoise', my_hparams)
+    ```
+
+10. **Gaussian Processes**. Another standard benchmark are Gaussian Processes,
+    see *Gaussian Processes for Machine Learning* by Rasmussen and Williams for
+    an introduction. To model the expected reward of different actions, we fit a
+    multitask GP.
+
+    See [Multi-task Gaussian Process
+    Prediction](http://papers.nips.cc/paper/3189-multi-task-gaussian-process-prediction.pdf).
+
+    Our implementation is provided in *multitask_gp.py*, and it is instantiated
+    as follows:
+
+    ```
+        gp = PosteriorBNNSampling('MyMultitaskGP', my_hparams, 'GP')
+    ```
+
+In the code snippet at the bottom, we show how to instantiate some of these
+algorithms, and how to run the contextual bandit simulator, and display the
+high-level results.
+
+## Data
+
+In the paper we use two types of contextual datasets: synthetic and based on
+real-world data.
+
+We provide functions that sample problems from those datasets. In the case of
+real-world data, you first need to download the raw datasets, and pass the route
+to the functions. Links for the datasets are provided below.
+
+### Synthetic Datasets
+
+Synthetic datasets are contained in the *synthetic_data_sampler.py* file. In
+particular, it includes:
+
+1.  **Linear data**. Provides a number of linear arms, and Gaussian contexts.
+
+2.  **Sparse linear data**. Provides a number of sparse linear arms, and
+    Gaussian contexts.
+
+3.  **Wheel bandit data**. Provides sampled data from the wheel bandit data, see
+    [Section 5.4](https://arxiv.org/abs/1802.09127) in the paper.
+
+### Real-World Datasets
+
+Real-world data generating functions are contained in the *data_sampler.py*
+file.
+
+In particular, it includes:
+
+1.  **Mushroom data**. Each incoming context represents a different type of
+    mushroom, and the actions are eat or no-eat. Eating an edible mushroom
+    provides positive reward, while eating a poisonous one provides positive
+    reward with probability *p*, and a large negative reward with probability
+    *1-p*. All the rewards, and the value of *p* are customizable. The
+    [dataset](https://archive.ics.uci.edu/ml/datasets/mushroom) is part of the
+    UCI repository, and the bandit problem was proposed in Blundell et al.
+    (2015). Data is available [here](https://storage.googleapis.com/bandits_datasets/mushroom.data)
+    or alternatively [here](https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/),
+    use the *agaricus-lepiota.data* file.
+
+2.  **Stock data**. We created the Financial Dataset by pulling the stock prices
+    of *d = 21* publicly traded companies in NYSE and Nasdaq, for the last 14
+    years (*n = 3713*). For each day, the context was the price difference
+    between the beginning and end of the session for each stock. We
+    synthetically created the arms to be a linear combination of the contexts,
+    representing *k = 8* different potential portfolios. Data is available
+    [here](https://storage.googleapis.com/bandits_datasets/raw_stock_contexts).
+
+3.  **Jester data**. We create a recommendation system bandit problem as
+    follows. The Jester Dataset (Goldberg et al., 2001) provides continuous
+    ratings in *[-10, 10]* for 100 jokes from a total of 73421 users. We find
+    a *complete* subset of *n = 19181* users rating all 40 jokes. Following
+    Riquelme et al. (2017), we take *d = 32* of the ratings as the context of
+    the user, and *k = 8* as the arms. The agent recommends one joke, and
+    obtains the reward corresponding to the rating of the user for the selected
+    joke. Data is available [here](https://storage.googleapis.com/bandits_datasets/jester_data_40jokes_19181users.npy).
+
+4.  **Statlog data**. The Shuttle Statlog Dataset (Asuncion & Newman, 2007)
+    provides the value of *d = 9* indicators during a space shuttle flight,
+    and the goal is to predict the state of the radiator subsystem of the
+    shuttle. There are *k = 7* possible states, and if the agent selects the
+    right state, then reward 1 is generated. Otherwise, the agent obtains no
+    reward (*r = 0*). The most interesting aspect of the dataset is that one
+    action is the optimal one in 80% of the cases, and some algorithms may
+    commit to this action instead of further exploring. In this case, the number
+    of contexts is *n = 43500*. Data is available [here](https://storage.googleapis.com/bandits_datasets/shuttle.trn) or alternatively
+    [here](https://archive.ics.uci.edu/ml/datasets/Statlog+\(Shuttle\)), use
+    *shuttle.trn* file.
+
+5.  **Adult data**. The Adult Dataset (Kohavi, 1996; Asuncion & Newman, 2007)
+    comprises personal information from the US Census Bureau database, and the
+    standard prediction task is to determine if a person makes over 50K a year
+    or not. However, we consider the *k = 14* different occupations as
+    feasible actions, based on *d = 94* covariates (many of them binarized).
+    As in previous datasets, the agent obtains a reward of 1 for making the
+    right prediction, and 0 otherwise. The total number of contexts is *n =
+    45222*. Data is available [here](https://storage.googleapis.com/bandits_datasets/adult.full) or alternatively
+    [here](https://archive.ics.uci.edu/ml/datasets/adult), use *adult.data*
+    file.
+
+6.  **Census data**. The US Census (1990) Dataset (Asuncion & Newman, 2007)
+    contains a number of personal features (age, native language, education...)
+    which we summarize in *d = 389* covariates, including binary dummy
+    variables for categorical features. Our goal again is to predict the
+    occupation of the individual among *k = 9* classes. The agent obtains
+    reward 1 for making the right prediction, and 0 otherwise. Data is available
+    [here](https://storage.googleapis.com/bandits_datasets/USCensus1990.data.txt) or alternatively [here](https://archive.ics.uci.edu/ml/datasets/US+Census+Data+\(1990\)), use
+    *USCensus1990.data.txt* file.
+
+7.  **Covertype data**. The Covertype Dataset (Asuncion & Newman, 2007)
+    classifies the cover type of northern Colorado forest areas in *k = 7*
+    classes, based on *d = 54* features, including elevation, slope, aspect,
+    and soil type. Again, the agent obtains reward 1 if the correct class is
+    selected, and 0 otherwise. Data is available [here](https://storage.googleapis.com/bandits_datasets/covtype.data) or alternatively
+    [here](https://archive.ics.uci.edu/ml/datasets/covertype), use
+    *covtype.data* file.
+
+In datasets 4-7, each feature of the dataset is normalized first.
 
 ## Usage: Basic Example
 
