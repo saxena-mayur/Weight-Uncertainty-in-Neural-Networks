@@ -120,7 +120,7 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 100
+  num_contexts = 50000
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
@@ -141,7 +141,7 @@ def main(_):
                                             layer_sizes=[100],
                                             batch_size=64,
                                             activate_decay=False,
-                                            initial_lr=0.001,
+                                            initial_lr=0.01,
                                             max_grad_norm=5.0,
                                             show_training=False,
                                             freq_summary=1000,
@@ -150,7 +150,7 @@ def main(_):
                                             optimizer='RMS',
                                             reset_lr=True,
                                             lr_decay_rate=0.0,
-                                            training_freq=1,
+                                            training_freq=10,
                                             training_epochs=64,
                                             p=1,
                                             q=3)
@@ -163,19 +163,19 @@ def main(_):
                                             layer_sizes=[100],
                                             batch_size=64,
                                             activate_decay=False,
-                                            initial_lr=0.001,
+                                            initial_lr=0.01,
                                             max_grad_norm=5.0,
                                             show_training=False,
                                             freq_summary=1000,
                                             buffer_s=4096,
                                             initial_pulls=0,
-                                            optimizer='Adam',
+                                            optimizer='RMS',
                                             use_sigma_exp_transform=True,
-                                            cleared_times_trained=10,
+                                            cleared_times_trained=0,
                                             initial_training_steps=64,
                                             noise_sigma=0.1,
                                             reset_lr=False,
-                                            training_freq=1,
+                                            training_freq=10,
                                             training_epochs=64)
 
 
