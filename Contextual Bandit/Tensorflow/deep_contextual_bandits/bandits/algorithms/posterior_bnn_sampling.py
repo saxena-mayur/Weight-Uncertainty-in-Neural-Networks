@@ -1,3 +1,18 @@
+# Copyright 2018 The TensorFlow Authors All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 """Contextual bandit algorithm based on Thompson Sampling and a Bayesian NN."""
 
 from __future__ import absolute_import
@@ -8,7 +23,9 @@ import numpy as np
 
 from bandits.core.bandit_algorithm import BanditAlgorithm
 from bandits.core.contextual_dataset import ContextualDataset
+from bandits.algorithms.neural_bandit_model import NeuralBanditModel
 from bandits.algorithms.variational_neural_bandit_model import VariationalNeuralBanditModel
+
 
 class PosteriorBNNSampling(BanditAlgorithm):
   """Posterior Sampling algorithm based on a Bayesian neural network."""
@@ -39,6 +56,14 @@ class PosteriorBNNSampling(BanditAlgorithm):
     bnn_name = '{}-bnn'.format(name)
     if bnn_model == 'Variational':
       self.bnn = VariationalNeuralBanditModel(hparams, bnn_name)
+    elif bnn_model == 'AlphaDiv':
+      self.bnn = BBAlphaDivergence(hparams, bnn_name)
+    elif bnn_model == 'Variational_BF':
+      self.bnn = BfVariationalNeuralBanditModel(hparams, bnn_name)
+    elif bnn_model == 'GP':
+      self.bnn = MultitaskGP(hparams)
+    else:
+      self.bnn = NeuralBanditModel(self.optimizer_n, hparams, bnn_name)
 
   def action(self, context):
     """Selects action for context based on Thompson Sampling using the BNN."""
