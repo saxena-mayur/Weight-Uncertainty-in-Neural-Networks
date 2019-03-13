@@ -93,7 +93,7 @@ def trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES):
     #Declare Network
     net = BayesianNetwork(inputSize = INPUT_SIZE,\
                         CLASSES = CLASSES, \
-                        layers=np.array([100,100,100]), \
+                        layers=np.array([200,200,200]), \
                         activations = np.array(['relu','relu','relu','softmax']), \
                         SAMPLES = SAMPLES, \
                         BATCH_SIZE = BATCH_SIZE,\
@@ -137,7 +137,7 @@ def test(net, colors_pokemon, pokemonType, TEST_SAMPLES):
     return results
 
 
-TRAIN_EPOCHS = 500
+TRAIN_EPOCHS = 1000
 TEST_SAMPLES = 10
 NUM_BATCHES = 10
 #https://www.rapidtables.com/web/color/RGB_Color.html#color-table
