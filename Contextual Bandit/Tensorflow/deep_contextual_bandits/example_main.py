@@ -89,9 +89,11 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 
   performance_pairs = []
   regret_pairs = []
+  regrets = []
   for j, a in enumerate(algos):
     performance_pairs.append((a.name, np.sum(h_rewards[:, j])))
     regret_pairs.append((a.name, np.cumsum(opt_rewards - h_rewards[:,j])))
+    regrets.append(np.cumsum(opt_rewards - h_rewards[:,j]))
   performance_pairs = sorted(performance_pairs,
                              key=lambda elt: elt[1],
                              reverse=True)
@@ -105,22 +107,18 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
   print('---------------------------------------------------')
   print('---------------------------------------------------')
 
-  regret_greedy = regret_pairs[0][1]
-  regret_BBB = regret_pairs[1][1]
-  regrets = [regret_greedy, regret_BBB]
-
 # Export cumulative regrets to CSV
   export_data = zip(*regrets)
   with open('regrets.csv', 'w', encoding="ISO-8859-1", newline='') as myfile:
       wr = csv.writer(myfile)
-      wr.writerow(("Greedy", "BBB"))
+      wr.writerow(("Greedy","Greedy_1","Greedy_5","BBB_Adam_001", "BBB_Adam_0001","BBB_RMS_001","BBB_RMS_0001"))
       wr.writerows(export_data)
   myfile.close()
 
 def main(_):
 
   # Problem parameters
-  num_contexts = 50000
+  num_contexts = 2000
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
@@ -134,7 +132,7 @@ def main(_):
   hparams = tf.contrib.training.HParams(num_actions=num_actions)
 
 
-  hparams_rms = tf.contrib.training.HParams(num_actions=num_actions,
+  hparams_greedy = tf.contrib.training.HParams(num_actions=num_actions,
                                             context_dim=context_dim,
                                             init_scale=0.3,
                                             activation=tf.nn.relu,
@@ -144,19 +142,18 @@ def main(_):
                                             initial_lr=0.01,
                                             max_grad_norm=5.0,
                                             show_training=False,
-                                            freq_summary=1000,
+                                            freq_summary=10,
                                             buffer_s=4096,
                                             initial_pulls=0,
                                             optimizer='RMS',
                                             reset_lr=True,
                                             lr_decay_rate=0.0,
-                                            training_freq=10,
+                                            training_freq=1,
                                             training_epochs=64,
                                             p=1,
                                             q=3)
 
-
-  hparams_bbb = tf.contrib.training.HParams(num_actions=num_actions,
+  hparams_greedy_1 = tf.contrib.training.HParams(num_actions=num_actions,
                                             context_dim=context_dim,
                                             init_scale=0.3,
                                             activation=tf.nn.relu,
@@ -166,7 +163,93 @@ def main(_):
                                             initial_lr=0.01,
                                             max_grad_norm=5.0,
                                             show_training=False,
-                                            freq_summary=1000,
+                                            freq_summary=10,
+                                            buffer_s=4096,
+                                            initial_pulls=0,
+                                            optimizer='RMS',
+                                            reset_lr=True,
+                                            lr_decay_rate=0.0,
+                                            training_freq=1,
+                                            training_epochs=64,
+                                            p=0.99,
+                                            q=3)
+
+  hparams_greedy_5 = tf.contrib.training.HParams(num_actions=num_actions,
+                                            context_dim=context_dim,
+                                            init_scale=0.3,
+                                            activation=tf.nn.relu,
+                                            layer_sizes=[100],
+                                            batch_size=64,
+                                            activate_decay=False,
+                                            initial_lr=0.01,
+                                            max_grad_norm=5.0,
+                                            show_training=False,
+                                            freq_summary=10,
+                                            buffer_s=4096,
+                                            initial_pulls=0,
+                                            optimizer='RMS',
+                                            reset_lr=True,
+                                            lr_decay_rate=0.0,
+                                            training_freq=1,
+                                            training_epochs=64,
+                                            p=0.95,
+                                            q=3)
+
+  hparams_bbb_Adam_001 = tf.contrib.training.HParams(num_actions=num_actions,
+                                            context_dim=context_dim,
+                                            init_scale=0.3,
+                                            activation=tf.nn.relu,
+                                            layer_sizes=[100],
+                                            batch_size=64,
+                                            activate_decay=False,
+                                            initial_lr=0.01,
+                                            max_grad_norm=5.0,
+                                            show_training=False,
+                                            freq_summary=10,
+                                            buffer_s=4096,
+                                            initial_pulls=0,
+                                            optimizer='Adam',
+                                            use_sigma_exp_transform=True,
+                                            cleared_times_trained=0,
+                                            initial_training_steps=64,
+                                            noise_sigma=0.1,
+                                            reset_lr=False,
+                                            training_freq=1,
+                                            training_epochs=64)
+
+  hparams_bbb_Adam_0001 = tf.contrib.training.HParams(num_actions=num_actions,
+                                            context_dim=context_dim,
+                                            init_scale=0.3,
+                                            activation=tf.nn.relu,
+                                            layer_sizes=[100],
+                                            batch_size=64,
+                                            activate_decay=False,
+                                            initial_lr=0.001,
+                                            max_grad_norm=5.0,
+                                            show_training=False,
+                                            freq_summary=10,
+                                            buffer_s=4096,
+                                            initial_pulls=0,
+                                            optimizer='Adam',
+                                            use_sigma_exp_transform=True,
+                                            cleared_times_trained=0,
+                                            initial_training_steps=64,
+                                            noise_sigma=0.1,
+                                            reset_lr=False,
+                                            training_freq=1,
+                                            training_epochs=64)
+
+  hparams_bbb_RMS_001 = tf.contrib.training.HParams(num_actions=num_actions,
+                                            context_dim=context_dim,
+                                            init_scale=0.3,
+                                            activation=tf.nn.relu,
+                                            layer_sizes=[100],
+                                            batch_size=64,
+                                            activate_decay=False,
+                                            initial_lr=0.01,
+                                            max_grad_norm=5.0,
+                                            show_training=False,
+                                            freq_summary=10,
                                             buffer_s=4096,
                                             initial_pulls=0,
                                             optimizer='RMS',
@@ -175,14 +258,42 @@ def main(_):
                                             initial_training_steps=64,
                                             noise_sigma=0.1,
                                             reset_lr=False,
-                                            training_freq=10,
+                                            training_freq=1,
+                                            training_epochs=64)
+
+  hparams_bbb_RMS_0001 = tf.contrib.training.HParams(num_actions=num_actions,
+                                            context_dim=context_dim,
+                                            init_scale=0.3,
+                                            activation=tf.nn.relu,
+                                            layer_sizes=[100],
+                                            batch_size=64,
+                                            activate_decay=False,
+                                            initial_lr=0.001,
+                                            max_grad_norm=5.0,
+                                            show_training=False,
+                                            freq_summary=10,
+                                            buffer_s=4096,
+                                            initial_pulls=0,
+                                            optimizer='RMS',
+                                            use_sigma_exp_transform=True,
+                                            cleared_times_trained=0,
+                                            initial_training_steps=64,
+                                            noise_sigma=0.1,
+                                            reset_lr=False,
+                                            training_freq=1,
                                             training_epochs=64)
 
 
-
   algos = [
-      PosteriorBNNSampling('MyNGreedy', hparams_rms, 'RMSProp'),
-      PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
+      PosteriorBNNSampling('Greedy', hparams_greedy, 'RMSProp'),
+      PosteriorBNNSampling('Greedy_1', hparams_greedy_1, 'RMSProp'),
+      PosteriorBNNSampling('Greedy_5', hparams_greedy_5, 'RMSProp'),
+
+      PosteriorBNNSampling('BBB_Adam_0.01', hparams_bbb_Adam_001, 'Variational'),
+      PosteriorBNNSampling('BBB_Adam_0.001', hparams_bbb_Adam_0001, 'Variational'),
+      PosteriorBNNSampling('BBB_RMS_0.01', hparams_bbb_RMS_001, 'Variational'),
+      PosteriorBNNSampling('BBB_RMS_0.001', hparams_bbb_RMS_0001, 'Variational'),
+
   ]
 
   # Run contextual bandit problem
