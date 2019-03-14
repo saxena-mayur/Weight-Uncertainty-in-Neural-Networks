@@ -46,3 +46,8 @@ class ScaleMixtureGaussian:
     def __repr__(self):
         return 'ScaleMixtureGaussian(pi = {0}, sigma1 = {1}, sigma2 = {2})'.format(self.pi,
                                                                self.sigma1, self.sigma2)
+    
+
+prior_nll = ScaleMixtureGaussian(PI = 0.75,
+                                 SIGMA_1 = np.exp(-1),
+                                 SIGMA_2 = np.exp(-6))
