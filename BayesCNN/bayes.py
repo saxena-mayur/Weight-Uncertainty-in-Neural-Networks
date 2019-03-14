@@ -14,13 +14,14 @@ LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if hasGPU else {}
 from utils import Flatten, ScaleMixtureGaussian, Var, DEVICE, PI, SIGMA_1, SIGMA_2, gaussian
 
 class BayesWrapper:
-    def __init__(self, net, prior_nll, name = 'Bayes Model'):
+    def __init__(self, name, net, prior_nll, mu_init=.05, rho_init=-5,
+                type='classification'):
         super().__init__()
         self.name = name # network name
         self.net = net
         self.bayes_params = [(name,
-                              torch.randn_like(p)*.05, #mu
-                              torch.randn_like(p)*.05-5,#rho,
+                              torch.randn_like(p)*mu_init, #mu
+                              torch.randn_like(p)*.05+rho_init,#rho,
                               torch.zeros_like(p),#sigma
                               torch.zeros_like(p)) #epsilon (buffer)
                              for name,p in self.net.state_dict().items()]
@@ -29,9 +30,13 @@ class BayesWrapper:
                 t.to(DEVICE)
         self.kl, self.pnll, self.vp = 0, 0, 0
         self.prior_nll = prior_nll
-        self.xent = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam([mu for name, mu, rho, _, eps in self.bayes_params]+
-                                    [rho for name, mu, rho, _, eps in self.bayes_params])
+        if type == 'regression':
+            self.criterion = nn.MSELoss()
+        elif type == 'classification':
+            self.criterion = nn.CrossEntropyLoss()
+        params = [mu for name, mu, rho, _, eps in self.bayes_params]+ [rho for name, mu, rho, _, eps in self.bayes_params]
+        #self.optimizer = optim.Adam(params)
+        self.optimizer = optim.SGD(params, lr=.001)
     
     def forward(self, input):     
         for name, mu, rho, sigma, eps in self.bayes_params:
@@ -47,7 +52,7 @@ class BayesWrapper:
     def step(self, outputs, targets, beta):
         self.net.zero_grad()
         n_samples = len(outputs)
-        xe = sum([self.xent(out, targets) for out in outputs])/n_samples
+        xe = sum([self.criterion(out, targets) for out in outputs])/n_samples
         kl = (self.vp + self.pnll)/n_samples
         net_loss = xe + beta*self.pnll/n_samples
         loss = net_loss + beta*self.vp/n_samples
