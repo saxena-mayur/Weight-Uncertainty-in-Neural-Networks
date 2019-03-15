@@ -71,10 +71,6 @@ def init_buffer():
         bufferY.append(get_reward(eat, y[i]))
     return bufferX, bufferY
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-print("Cuda available?: ",torch.cuda.is_available())
-
 PI = 0.75
 SIGMA_1 = torch.FloatTensor([math.exp(-1)])
 SIGMA_2 = torch.FloatTensor([math.exp(-6)])
