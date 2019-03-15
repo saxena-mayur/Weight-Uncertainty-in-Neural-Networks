@@ -14,8 +14,9 @@ LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if hasGPU else {}
 from utils import Flatten, ScaleMixtureGaussian, Var, DEVICE, PI, SIGMA_1, SIGMA_2, gaussian
 
 class BayesWrapper:
-    def __init__(self, name, net, prior_nll, mu_init=.05, rho_init=-5,
-                type='classification'):
+    def __init__(self, name, net, prior_nll, 
+                 mu_init=.05, rho_init=-5,
+                 type='classification', lr = 2e-5):
         super().__init__()
         self.name = name # network name
         self.net = net
@@ -31,12 +32,11 @@ class BayesWrapper:
         self.kl, self.pnll, self.vp = 0, 0, 0
         self.prior_nll = prior_nll
         if type == 'regression':
-            self.criterion = nn.MSELoss()
+            self.criterion = lambda x, y:.5*((x-y)**2).sum()
         elif type == 'classification':
             self.criterion = nn.CrossEntropyLoss()
         params = [mu for name, mu, rho, _, eps in self.bayes_params]+ [rho for name, mu, rho, _, eps in self.bayes_params]
-        #self.optimizer = optim.Adam(params)
-        self.optimizer = optim.SGD(params, lr=.001)
+        self.optimizer = optim.SGD(params, lr=lr)
     
     def forward(self, input):     
         for name, mu, rho, sigma, eps in self.bayes_params:
