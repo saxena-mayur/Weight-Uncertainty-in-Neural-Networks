@@ -13,7 +13,7 @@ from BayesBackpropagation import *
 
 #### CUDA NOT YET IMPLEMENTED - DISABLE IN BayesBackpropagation.py ###
 
-NB_STEPS = 10000
+NB_STEPS = 50000
 print('running for {0} steps'.format(NB_STEPS))
 
 # Import data from file
@@ -77,8 +77,12 @@ contexts, types, optimal_rewards = init_data()
 
 
 # Define some hyperparameters
-PI = 0.25
-SIGMA_1 = torch.FloatTensor([math.exp(-0)])
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
+print("Cuda available?: ",torch.cuda.is_available())
+
+PI = 0.75
+SIGMA_1 = torch.FloatTensor([math.exp(-1)])
 SIGMA_2 = torch.FloatTensor([math.exp(-6)])
 
 import torch.nn as nn
@@ -98,13 +102,11 @@ class MushroomNet():
         self.cum_regrets = [0]
         self.bufferX = []
         self.bufferY = []
-        self.trainingX = []
-        self.trainingY = []
     
     # Use NN to decide next action
     def try_ (self, mushroom):
         samples = self.n_weight_sampling
-        context, edible = contexts[mushroom], types[mushroom]
+        context, edible = x[mushroom], y[mushroom]
         try_eat = Var(np.concatenate((context, [1, 0])))
         try_reject = Var(np.concatenate((context, [0, 1])))
         
@@ -131,29 +133,23 @@ class MushroomNet():
         oracle = oracle_reward(edible)
         regret = oracle - agent_reward
         self.cum_regrets.append(self.cum_regrets[-1]+regret)
-    
-    
+
+
     # Function for generating a minibatch
     def generate_minibatch(self, trainingX, trainingY):
         bX = []
         bY = []
         for i in range(64):
             random = np.random.randint(0, len(trainingX))
-            bX.append(self.trainingX[random])
-            bY.append(self.trainingY[random])
-            #print("random mushroom is:" + str(random))
-            #print("len of bX is:" + str(len(bX)))
+            bX.append(trainingX[random])
+            bY.append(trainingY[random])
             return bX, bY
     
     # Feed next mushroom
     def update(self, mushroom):
         self.try_(mushroom)
-        #print("len of buffer is: " + str(len(self.bufferX)))
-        self.trainingX = self.bufferX[-4096:]
-        #print("len of trainingX is: " + str(len(self.trainingX)))
-        self.trainingY = self.bufferY[-4096:]
         for minibatch in range(64):
-            bX, bY = self.generate_minibatch(self.trainingX, self.trainingY)
+            bX, bY = self.generate_minibatch(self.bufferX[-4096:], self.bufferY[-4096:])
             self.net.zero_grad()
             self.loss(Var(np.asarray(bX)), Var(np.asarray(bY))).backward()
             self.optimizer.step()
@@ -161,8 +157,8 @@ class MushroomNet():
 
 # Class for BBB agent
 class BBB_MNet(MushroomNet):
-    def __init__(self, label):
-        super().__init__(label)
+    def __init__(self, label, lr=0, **kwargs):
+        super().__init__(label, **kwargs)
         self.net = BayesianNetwork(inputSize = x.shape[1]+2,
                                    CLASSES = 1,
                                    layers=np.array([100,100]),
@@ -173,30 +169,45 @@ class BBB_MNet(MushroomNet):
                                    hasScalarMixturePrior=True,
                                    PI=PI,
                                    SIGMA_1 = SIGMA_1,
-                                   SIGMA_2 = SIGMA_2
+                                   SIGMA_2 = SIGMA_2,
+                                   GOOGLE_INIT=True,
                                    ).to(DEVICE)
-        self.optimizer = optim.Adam(self.net.parameters(), lr = 0.01)
+        self.lr = lr
+        self.optimizer = optim.Adam(self.net.parameters(), lr = self.lr)
         self.loss = lambda data, target:self.net.BBB_loss(data, target)
 
 
 # Class for Greedy agents
 class EpsGreedyMlp(MushroomNet):
-    def __init__(self, epsilon=0, **kwargs):
+    def __init__(self, epsilon=0, lr=0, **kwargs):
         super().__init__(**kwargs)
         self.n_weight_sampling = 1
         self.epsilon = epsilon
+        self.lr = lr
         self.net = nn.Sequential(
                                  nn.Linear(x.shape[1]+2, 100), nn.ReLU(),
                                  nn.Linear(100, 100), nn.ReLU(),
                                  nn.Linear(100, 1))
-        self.optimizer = optim.SGD(self.net.parameters(), lr = 0.001)
-        self.mse = nn.MSELoss()
+        self.optimizer = optim.SGD(self.net.parameters(), lr = self.lr)
+        self.mse = nn.MSELoss(reduction = 'sum')
         self.loss = lambda data, target: self.mse(self.net.forward(data), target)
 
-mushroom_nets = {'bbb':BBB_MNet(label = 'BBB'),
-    'e0':EpsGreedyMlp(epsilon=0, label = 'Greedy'),
-    'e1':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy'),
-    'e5':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy')}
+
+mushroom_nets = {'bbb0.001':BBB_MNet(label = 'BBB 0.001', lr = 0.001),
+    'bbb0.0001':BBB_MNet(label = 'BBB 0.0001', lr = 0.0001),
+    'bbb0.00001':BBB_MNet(label = 'BBB 0.00001', lr = 0.00001),
+    
+    'e0.001':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.001', lr = 0.001),
+    'e0.0001':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.0001', lr = 0.0001),
+    'e0.00001':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.00001', lr = 0.00001),
+        
+    'e1.001':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.001', lr = 0.001),
+    'e1.0001':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.0001', lr = 0.0001),
+    'e1.00001':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.00001', lr = 0.00001),
+            
+    'e5.001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.001', lr = 0.001),
+    'e5.0001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.0001', lr = 0.0001),
+    'e5.00001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.00001', lr = 0.00001),}
 
 
 for _ in tqdm(range(NB_STEPS)):
@@ -206,4 +217,4 @@ for _ in tqdm(range(NB_STEPS)):
 
 import pandas as pd
 df = pd.DataFrame.from_dict({net.label: net.cum_regrets for i, net in mushroom_nets.items()})
-df.to_csv('mushroom_regrets_v3.csv')
+df.to_csv('mushroom_regrets_empty_init.csv')

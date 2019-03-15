@@ -13,7 +13,7 @@ from BayesBackpropagation import *
 
 #### CUDA NOT YET IMPLEMENTED - DISABLE IN BayesBackpropagation.py ###
 
-NB_STEPS = 10000
+NB_STEPS = 50000
 print('running for {0} steps'.format(NB_STEPS))
 
 # Import data from file
@@ -71,10 +71,17 @@ def init_buffer():
         bufferY.append(get_reward(eat, y[i]))
     return bufferX, bufferY
 
-# Define some hyperparameters
-PI = 0.25
-SIGMA_1 = torch.FloatTensor([math.exp(-0)])
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+LOADER_KWARGS = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
+print("Cuda available?: ",torch.cuda.is_available())
+
+PI = 0.75
+SIGMA_1 = torch.FloatTensor([math.exp(-1)])
 SIGMA_2 = torch.FloatTensor([math.exp(-6)])
+
+import torch.nn as nn
+import torch.nn.functional as F
+import sys
 
 Var = lambda x, dtype=torch.FloatTensor: Variable(torch.from_numpy(x).type(dtype))
 
@@ -131,46 +138,61 @@ class MushroomNet():
             self.net.zero_grad()
             self.loss(bX[idx], bY[idx]).backward()
             self.optimizer.step()
+
             
 # Class for BBB agent
 class BBB_MNet(MushroomNet):
-    def __init__(self, label):
-        super().__init__(label)
+    def __init__(self, label, lr=0, **kwargs):
+        super().__init__(label, **kwargs)
         self.net = BayesianNetwork(inputSize = x.shape[1]+2,
-                       CLASSES = 1,
-                       layers=np.array([100,100]),
-                       activations = np.array(['relu','relu','none']),
-                       SAMPLES = 1,
-                       BATCH_SIZE = 64,
-                       NUM_BATCHES = 64,
-                       hasScalarMixturePrior=True,
-                       PI=PI,
-                       SIGMA_1 = SIGMA_1,
-                       SIGMA_2 = SIGMA_2
-                       ).to(DEVICE)
-        self.optimizer = optim.Adam(self.net.parameters(), lr = 0.5)
+                                   CLASSES = 1,
+                                   layers=np.array([100,100]),
+                                   activations = np.array(['relu','relu','none']),
+                                   SAMPLES = 2,
+                                   BATCH_SIZE = 64,
+                                   NUM_BATCHES = 64,
+                                   hasScalarMixturePrior=True,
+                                   PI=PI,
+                                   SIGMA_1 = SIGMA_1,
+                                   SIGMA_2 = SIGMA_2,
+                                   GOOGLE_INIT=True,
+                                   ).to(DEVICE)
+        self.lr = lr
+        self.optimizer = optim.Adam(self.net.parameters(), lr = self.lr)
         self.loss = lambda data, target:self.net.BBB_loss(data, target)
 
 
 # Class for Greedy agents
 class EpsGreedyMlp(MushroomNet):
-    def __init__(self, epsilon=0, **kwargs):
+    def __init__(self, epsilon=0, lr=0, **kwargs):
         super().__init__(**kwargs)
         self.n_weight_sampling = 1
         self.epsilon = epsilon
+        self.lr = lr
         self.net = nn.Sequential(
-        nn.Linear(x.shape[1]+2, 100), nn.ReLU(),
-        nn.Linear(100, 100), nn.ReLU(),
-        nn.Linear(100, 1))
-        self.bufferX, self.bufferY = init_buffer()
-        self.optimizer = optim.SGD(self.net.parameters(), lr = 0.001)
-        self.mse = nn.MSELoss()
+                                 nn.Linear(x.shape[1]+2, 100), nn.ReLU(),
+                                 nn.Linear(100, 100), nn.ReLU(),
+                                 nn.Linear(100, 1))
+        self.optimizer = optim.SGD(self.net.parameters(), lr = self.lr)
+        self.mse = nn.MSELoss(reduction = 'sum')
         self.loss = lambda data, target: self.mse(self.net.forward(data), target)
 
-mushroom_nets = {'bbb':BBB_MNet(label = 'BBB'),
-    'e0':EpsGreedyMlp(epsilon=0, label = 'Greedy'),
-    'e1':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy'),
-    'e5':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy')}
+
+mushroom_nets = {'bbb 0.001':BBB_MNet(label = 'BBB 0.001', lr = 0.001),
+    'bbb 0.0001':BBB_MNet(label = 'BBB 0.0001', lr = 0.0001),
+    'bbb 0.00001':BBB_MNet(label = 'BBB 0.00001', lr = 0.00001),
+    
+    'e0 0.001':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.001', lr = 0.001),
+    'e0 0.0001':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.0001', lr = 0.0001),
+    'e0 0.00001':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.00001', lr = 0.00001),
+        
+    'e1 0.001':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.001', lr = 0.001),
+    'e1 0.0001':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.0001', lr = 0.0001),
+    'e1 0.00001':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.00001', lr = 0.00001),
+            
+    'e5 0.001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.001', lr = 0.001),
+    'e5 0.0001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.0001', lr = 0.0001),
+    'e5 0.00001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.00001', lr = 0.00001),}
 
 
 for _ in tqdm(range(NB_STEPS)):
@@ -180,4 +202,4 @@ for _ in tqdm(range(NB_STEPS)):
 
 import pandas as pd
 df = pd.DataFrame.from_dict({net.label: net.cum_regrets for i, net in mushroom_nets.items()})
-df.to_csv('mushroom_regrets.csv')
+df.to_csv('mushroom_regrets_random_init.csv')
