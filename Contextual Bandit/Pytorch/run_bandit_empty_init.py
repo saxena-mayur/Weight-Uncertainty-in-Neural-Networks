@@ -13,7 +13,7 @@ from BayesBackpropagation import *
 
 #### CUDA NOT YET IMPLEMENTED - DISABLE IN BayesBackpropagation.py ###
 
-NB_STEPS = 50000
+NB_STEPS = 5000
 print('running for {0} steps'.format(NB_STEPS))
 
 # Import data from file
@@ -192,18 +192,22 @@ class EpsGreedyMlp(MushroomNet):
 mushroom_nets = {'bbb0.001':BBB_MNet(label = 'BBB 0.001', lr = 0.001),
     'bbb0.0001':BBB_MNet(label = 'BBB 0.0001', lr = 0.0001),
     'bbb0.00001':BBB_MNet(label = 'BBB 0.00001', lr = 0.00001),
+    'bbb0.00005':BBB_MNet(label = 'BBB 0.00005', lr = 0.00005),
     
     'e0.001':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.001', lr = 0.001),
     'e0.0001':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.0001', lr = 0.0001),
     'e0.00001':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.00001', lr = 0.00001),
-        
+    'e0.00005':EpsGreedyMlp(epsilon=0, label = 'Greedy 0.00005', lr = 0.00005),
+    
     'e1.001':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.001', lr = 0.001),
     'e1.0001':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.0001', lr = 0.0001),
     'e1.00001':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.00001', lr = 0.00001),
-            
+    'e1.00005':EpsGreedyMlp(epsilon=0.01, label = '1% Greedy 0.00005', lr = 0.00005),
+
     'e5.001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.001', lr = 0.001),
     'e5.0001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.0001', lr = 0.0001),
-    'e5.00001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.00001', lr = 0.00001),}
+    'e5.00001':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.00001', lr = 0.00001),
+    'e5.00005':EpsGreedyMlp(epsilon=0.05, label = '5% Greedy 0.00005', lr = 0.00005),}
 
 
 for _ in tqdm(range(NB_STEPS)):
