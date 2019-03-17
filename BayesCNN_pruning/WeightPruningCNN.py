@@ -13,8 +13,9 @@ def getThreshold(bayes_params,buckets):
     mus = []
 
     for name, mu, rho, sigma, eps in bayes_params:
-        sigmas.append(rho.view(-1).cpu().detach().numpy())
-        mus.append(mu.view(-1).cpu().detach().numpy())
+        if 'bias' not in name:
+            sigmas.append(rho.view(-1).cpu().detach().numpy())
+            mus.append(mu.view(-1).cpu().detach().numpy())
 
     sigmas = np.concatenate(sigmas).ravel()
     mus = np.concatenate(mus).ravel()
@@ -57,10 +58,11 @@ for index in range(buckets.size):
     t = Variable(torch.Tensor([thresholds[index]]))
     bayes_params2 = bayes_params.copy()
     for name, mu, rho, sigma, eps in bayes_params2:
-        sigma = np.log(1. + np.exp(rho.cpu()))
-        signalRatio = np.abs(mu.cpu()) / sigma
-        signalRatio = (signalRatio > t).float() * 1
-        rho.copy_((rho.cpu() * signalRatio).cuda())
-        mu.copy_((mu.cpu() * signalRatio).cuda())
+        if 'bias' not in name:
+            sigma = np.log(1. + np.exp(rho.cpu()))
+            signalRatio = np.abs(mu.cpu()) / sigma
+            signalRatio = (signalRatio > t).float() * 1
+            rho.copy_((rho.cpu() * signalRatio).cuda())
+            mu.copy_((mu.cpu() * signalRatio).cuda())
 
     torch.save(bayes_params2, path + '_Pruned_' + str(buckets[index]) + '.pth')
