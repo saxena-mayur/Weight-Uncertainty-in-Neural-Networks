@@ -12,3 +12,22 @@ We have a Pytorch and Tensorflow implementation. The Pytorch implementation achi
 Run experiments for the pytorch implementation varying learning rates and optimisers. 
 For Greedy agents: tried SGD and Adam with lr = 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, achieving best results with SGD, lr = 0.0005. I have saved the data and plot for this experiment in the Results folder.
 For BBB agent: tried SGD and Adam with lr = 0.01, 0.05, 0.001, using number of samples: 2, 5, 10.
+
+
+## Experiment (Guillaume)
+
+Pytorch (guillaume) implementation,
+learning rate 0.001, bbb_number of_samples 2, for greedy agent and bbb_net, for 10 000 steps, starting with an empty buffer, with proba clipping to avoid numerical problems
+
+loss: sum of square distances in minibatch. Maybe take a smaller lr then ?
+
+Step 2626/10000, Edible:1,  BBB : 14000, Greedy: 6405
+
+A2: lr=2e-5, (but sum of square distance ->*64)
+to make Bayes converge, it is also possible to decrease the weight of kl.
+maybe use exponential reweighting ? that is strange.
+
+
+
+
+

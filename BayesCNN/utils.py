@@ -29,7 +29,7 @@ class Flatten(nn.Module):
 
 def gaussian(x, mu, sigma):
     bell = torch.exp(- (x - mu) ** 2 / (2.0 * sigma ** 2))
-    return bell/(np.sqrt(2*np.pi)*sigma)
+    return torch.clamp(bell/(np.sqrt(2*np.pi)*sigma), 1e-10, 1e10)
 
     
 class ScaleMixtureGaussian:
@@ -46,3 +46,8 @@ class ScaleMixtureGaussian:
     def __repr__(self):
         return 'ScaleMixtureGaussian(pi = {0}, sigma1 = {1}, sigma2 = {2})'.format(self.pi,
                                                                self.sigma1, self.sigma2)
+    
+
+prior_nll = ScaleMixtureGaussian(PI = 0.75,
+                                 SIGMA_1 = np.exp(-1),
+                                 SIGMA_2 = np.exp(-6))
