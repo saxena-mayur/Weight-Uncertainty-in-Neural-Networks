@@ -9,6 +9,7 @@ from BayesBackpropagation import *
 import math
 import torch.optim as optim
 import json
+import colorsys
 
 def loadPokemonColours():
     with open('median_values.json') as f:
@@ -29,6 +30,7 @@ def generatePokemonData(NUM_BATCHES):
                 r = col['R']/255.
                 g = col['G']/255.
                 b = col['B']/255.
+                #r,g,b = colorsys.rgb_to_hsv(r,g,b)
                 #r,g,b = colors.to_rgb(row[13]) + noise
                 if row[3]!="":
                     data.append([row[1],row[13],r,g,b,row[3]])
@@ -93,8 +95,8 @@ def trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES):
     #Declare Network
     net = BayesianNetwork(inputSize = INPUT_SIZE,\
                         CLASSES = CLASSES, \
-                        layers=np.array([200,200,200]), \
-                        activations = np.array(['relu','relu','relu','softmax']), \
+                        layers=np.array([200,200]), \
+                        activations = np.array(['relu','relu','softmax']), \
                         SAMPLES = SAMPLES, \
                         BATCH_SIZE = BATCH_SIZE,\
                         NUM_BATCHES = NUM_BATCHES,\
@@ -104,8 +106,8 @@ def trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES):
                         SIGMA_2 = SIGMA_2).to(DEVICE)
 
     #Declare the optimizer
-    #optimizer = optim.SGD(net.parameters(),lr=1e-4,momentum=0.9) #
-    optimizer = optim.Adam(net.parameters())
+    optimizer = optim.SGD(net.parameters(),lr=1e-4,momentum=0.9) #
+    #optimizer = optim.Adam(net.parameters())
 
     for epoch in range(TRAIN_EPOCHS):
         train(net, optimizer,data=train_x,target=train_y,NUM_BATCHES=NUM_BATCHES)
@@ -137,7 +139,7 @@ def test(net, colors_pokemon, pokemonType, TEST_SAMPLES):
     return results
 
 
-TRAIN_EPOCHS = 1000
+TRAIN_EPOCHS = 500
 TEST_SAMPLES = 10
 NUM_BATCHES = 10
 #https://www.rapidtables.com/web/color/RGB_Color.html#color-table
