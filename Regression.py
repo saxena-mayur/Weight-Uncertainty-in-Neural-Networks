@@ -16,14 +16,14 @@ def train(net, optimizer, data, target, NUM_BATCHES):
         optimizer.step()
 
 #Hyperparameter setting
-TRAIN_EPOCHS = 500
+TRAIN_EPOCHS = 900
 SAMPLES = 5
-TEST_SAMPLES = 5
-BATCH_SIZE = 100
+TEST_SAMPLES = 10
+BATCH_SIZE = 200
 NUM_BATCHES = 10
-TEST_BATCH_SIZE = 150
+TEST_BATCH_SIZE = 50
 CLASSES = 1
-PI = 0.5
+PI = 0.25
 SIGMA_1 = torch.FloatTensor([math.exp(-0)]).to(DEVICE)
 SIGMA_2 = torch.FloatTensor([math.exp(-6)]).to(DEVICE)
 
@@ -45,12 +45,6 @@ x_test = np.linspace(-0.5, 1,TEST_BATCH_SIZE)
 y_test = x_test + 0.3*np.sin(2*np.pi*x_test) + 0.3*np.sin(4*np.pi*x_test)
 X_test = Var(x_test)
 
-#plt.scatter(x, y, c='navy', label='target')
-#plt.legend()
-#plt.tight_layout()
-#plt.show()
-#print(x.shape)
-
 #Training
 print('Training Begins!')
 
@@ -65,11 +59,11 @@ net = BayesianNetwork(inputSize = 1,\
                       hasScalarMixturePrior = True,\
                       PI = PI,\
                       SIGMA_1 = SIGMA_1,\
-                      SIGMA_2 = SIGMA_2).to(DEVICE)
+                      SIGMA_2 = SIGMA_2,\
+                      GOOGLE_INIT= False).to(DEVICE)
 
 #Declare the optimizer
-optimizer = optim.SGD(net.parameters(),lr=1e-3,momentum=0.9) #
-#optimizer = optim.Adam(net.parameters())
+optimizer = optim.SGD(net.parameters(),lr=1e-3,momentum=0.95)
 
 for epoch in range(TRAIN_EPOCHS):
     if (epoch)%10 == 0:
@@ -96,7 +90,6 @@ plt.legend()
 plt.tight_layout()
 plt.savefig('./Results/Regression.png')
 plt.savefig('./Results/Regression.eps', format='eps', dpi=1000)
-#plt.show()
 
 #Save the trained model
 torch.save(net.state_dict(), './Models/Regression.pth')
