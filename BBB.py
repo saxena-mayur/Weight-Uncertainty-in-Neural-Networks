@@ -14,7 +14,6 @@ from torchvision import datasets
 
 torch.manual_seed(0)
 
-
 class BBB_Hyper(object):
 
     def __init__(self, ):
@@ -25,7 +24,7 @@ class BBB_Hyper(object):
         self.lr = 1e-4
 
         self.momentum = 0.95
-        self.hidden_units = 400
+        self.hidden_units = 1200
         self.s1 = float(np.exp(-8))
         self.s2 = float(np.exp(-1))
         self.pi = 0.75
@@ -68,7 +67,6 @@ class BBBLayer(nn.Module):
         self.s1 = hyper.s1
         self.s2 = hyper.s2
         self.pi = hyper.pi
-
 
         # We initialise weigth_mu and bias_mu as for usual Linear layers in PyTorch
         self.weight_mu = nn.Parameter(torch.Tensor(n_output, n_input))
@@ -198,7 +196,7 @@ def evaluate(model, loader, infer=True, samples=1):
     return acc_sum / len(loader)
 
 
-def BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput):
+def BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput, id=0):
     """Initialize network"""
     model = BBB(n_input, n_ouput, hyper).cuda()
     optimizer = torch.optim.SGD(model.parameters(), lr=hyper.lr, momentum=hyper.momentum)
@@ -222,7 +220,7 @@ def BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput):
         train_losses[epoch] = train_loss
 
     """Save"""
-    path = 'Results/BBB_' + hyper.dataset + '_weightedll_' + str(hyper.hidden_units) + '_' + str(hyper.lr)
+    path = 'Results/BBB2_' + hyper.dataset + '_' + str(hyper.hidden_units) + '_' + str(hyper.lr) + '_samples' + str(hyper.n_samples)+ '_ID' + str(id)
     wr = csv.writer(open(path + '.csv', 'w'), delimiter=',', lineterminator='\n')
     wr.writerow(['epoch', 'valid_acc', 'test_acc', 'train_losses'])
 
@@ -239,8 +237,6 @@ if __name__ == '__main__':
     hyper = BBB_Hyper()
     if len(sys.argv) > 1:
         hyper.hidden_units = int(sys.argv[1])
-
-    print(hyper.__dict__)
 
     """Prepare data"""
     valid_size = 1 / 6
@@ -314,18 +310,84 @@ if __name__ == '__main__':
         batch_size=hyper.eval_batch_size,
         num_workers=1)
 
-    model = BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput)
+    '''from itertools import product
 
-    '''exec(open("WeightPruning.py").read())
+    params = {
+        'pi': [0.25, 0.5, 0.75],
+        'rho': [-8, -7, -6, -5],
+        's1': [0., 1., 2.],
+        's2': [6., 7., 8.],
+    }  # keys must be sorted
+    keys = sorted(params)
+    paramCombinations = list(product(*(params[key] for key in keys)))
+
+    results = []
+    hyper.max_epoch = 1
+    for pi, rho, s1, s2 in tqdm(paramCombinations):
+        print(pi, rho, s1, s2)
+
+        hyper.pi = pi
+        hyper.rho_init = rho
+        hyper.s1 = float(np.exp(-s1))
+        hyper.s2 = float(np.exp(-s2))
+
+        model, valid_acc = BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput)
+
+        results.append((pi, rho, s1, s2, valid_acc))'''
+
+    '''# Error after 1 epoch: pi, rho, s1, s2, validAcc
+    top = {
+        400: [(0.5, -8, 0, 8, 3.47),
+                        (0.75, -7, 0, 8, 3.51),
+                        (0.25, -8, 0, 8, 3.56),
+                        (0.75, -6, 2, 8, 3.6),
+                        (0.25, -8, 1, 6, 3.63)], # Best one. Test error (1 sample): 1.75
+        800: [(0.75, -6, 0, 8, 3.24),
+                        (0.5, -6, 2, 8, 3.26),
+                        (0.75, -7, 0, 8, 3.26),
+                        (0.25, -7, 0, 8, 3.34), # Best one. Test error (1 sample): 1.71
+                        (0.75, -8, 0, 8, 3.35)],
+        1200: [(0.75, -7, 1, 8, 3.01),
+                        (0.5, -7, 1, 8, 3.03),
+                        (0.5, -6, 1, 7, 3.13),
+                        (0.75, -8, 1, 8, 3.15),
+                        (0.25, -7, 1, 8, 3.16) # Best one. Test error (10 samples): 1.57
+                        ]
+    }
+
+    id = 0
+    if len(sys.argv) > 1:
+        id = int(sys.argv[1])
+    hyper.max_epoch = 600
+    for hidden in [400,800,1200]:
+        torch.manual_seed(0)
+
+        hyper.hidden_units = hidden
+        pi, rho, s1, s2, acc = top[hidden][id]
+
+        hyper.pi = pi
+        hyper.rho_init = rho
+        hyper.s1 = float(np.exp(-s1))
+        hyper.s2 = float(np.exp(-s2))
+
+        print(hyper.__dict__)
+        model = BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput, id=id)'''
+
+    #exec(open("WeightPruning.py").read())
+
+    hyper.hidden_units = 1200
 
     """Evaluate pruned models"""
     import os
-    for root, dirs, files in os.walk("Models"):
+    for root, dirs, files in os.walk("Results"):
         for file in files:
-            if file.startswith('BBB_MNIST2_') and file.endswith(".pth"):
+            if file.startswith('BBB2_mnist_1200_0.0001_samples1_ID4') and file.endswith(".pth"):
                 print(file)
                 model1 = BBB(n_input, n_ouput, hyper)
-                model1.load_state_dict(torch.load('Models/' + file))
+                model1.load_state_dict(torch.load('Results/' + file))
                 model1.eval()
                 model1.cuda()
-                print(round(1 - evaluate(model1, test_loader) / hyper.eval_batch_size, 5) * 100)'''
+                print('Valid', round(1 - evaluate(model1, valid_loader) / hyper.eval_batch_size, 5) * 100)
+                print('Valid 10', round(1 - evaluate(model1, valid_loader, samples=10) / hyper.eval_batch_size, 5) * 100)
+                print('Test', round(1 - evaluate(model1, test_loader) / hyper.eval_batch_size, 5) * 100)
+                print('Test 10', round(1 - evaluate(model1, test_loader, samples=10) / hyper.eval_batch_size, 5) * 100)
