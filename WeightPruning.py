@@ -7,6 +7,8 @@ plt.switch_backend('agg')
 hasGPU = False
 DEVICE = torch.device("cuda" if hasGPU else "cpu")
 
+HIDDEN = 1200
+
 # Hyperparameter declaration
 BATCH_SIZE = 125
 TEST_BATCH_SIZE = 1000
@@ -17,7 +19,7 @@ PI = 0.25
 SIGMA_1 = torch.FloatTensor([0.75]).to(DEVICE)
 SIGMA_2 = torch.FloatTensor([0.1]).to(DEVICE)
 INPUT_SIZE = 28 * 28
-LAYERS = np.array([400, 400])
+LAYERS = np.array([HIDDEN, HIDDEN])
 NUM_BATCHES = 0
 ACTIVATION_FUNCTIONS = np.array(['relu','relu','softmax'])
 model = BayesianNetwork(inputSize=INPUT_SIZE,
@@ -83,12 +85,12 @@ for index in range(buckets.size):
     t = Variable(torch.Tensor([thresholds[index]]))
     model1 = copy.deepcopy(model)
     for i in range(3):
-        sigma = model.state_dict()['layers.'+str(i)+'.weight_rho']
+        rho = model.state_dict()['layers.'+str(i)+'.weight_rho']
         mu = model.state_dict()['layers.'+str(i)+'.weight_mu'] 
-        sigma = np.log(1. + np.exp(sigma))
+        sigma = np.log(1. + np.exp(rho))
         signalRatio = np.abs(mu) / sigma
         signalRatio = (signalRatio > t).float() * 1
-        model1.state_dict()['layers.'+str(i)+'.weight_rho'].data.copy_(sigma * signalRatio)
+        model1.state_dict()['layers.'+str(i)+'.weight_rho'].data.copy_(rho * signalRatio)
         model1.state_dict()['layers.'+str(i)+'.weight_mu'].data.copy_(mu * signalRatio)
 
     torch.save(model1.state_dict(), './Models/BBB_MNIST_Pruned_'+str(buckets[index])+'.pth')

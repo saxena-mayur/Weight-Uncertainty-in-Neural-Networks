@@ -1,0 +1,30 @@
+BBB2_mnist_1200_0.0001_samples1_ID4_Pruned_50.pth
+Valid 3.82
+Valid 10 89.75
+Test 3.84
+Test 10 87.69
+BBB2_mnist_1200_0.0001_samples1_ID4.pth
+Valid 1.53
+Valid 10 1.52
+Test 1.58
+Test 10 1.59
+BBB2_mnist_1200_0.0001_samples1_ID4_Pruned_75.pth
+Valid 19.33
+Valid 10 91.52
+Test 19.34
+Test 10 89.14
+BBB2_mnist_1200_0.0001_samples1_ID4_Pruned_98.pth
+Valid 85.44
+Valid 10 90.18
+Test 85.42
+Test 10 89.75999999999999
+BBB2_mnist_1200_0.0001_samples1_ID4_Pruned_0.pth
+Valid 1.53
+Valid 10 1.53
+Test 1.58
+Test 10 1.63
+BBB2_mnist_1200_0.0001_samples1_ID4_Pruned_95.pth
+Valid 82.67
+Valid 10 88.91
+Test 82.37
+Test 10 88.84
