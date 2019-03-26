@@ -1,0 +1,33 @@
+\begin{figure}
+	\centering			
+	\tikzsetnextfilename{fmnist_testerrors}
+	\begin{tikzpicture}
+	\begin{axis}[
+	ymin=9,
+	ymax=14,
+	xmin=0,
+	xmax=600,
+	xlabel={Epochs}, ylabel={Test error (\%)},
+	width=0.5\textwidth,
+	height=0.24\textheight,
+	% Legend top
+	legend style={at={(0.5,1.1)}, anchor=south,legend columns=-1},
+	legend style={draw=none},	
+	% Legend right
+	%legend style={at={(1.05,0.5)},anchor=west},
+	]
+	\addplot[color=BBB, thick] table[x index={0},y 
+	expr=100*(\thisrowno{3})] {figures/fmnist.csv};
+	\addplot[color=DOT, thick] table[x index={0},y 
+	expr=100*(\thisrowno{1})] {figures/fmnist.csv};
+	%dotted
+	\addplot[color=SGD, thick] table[x index={0},y 
+	expr=100*\thisrowno{2}] {figures/fmnist.csv};
+	\addlegendentry{Bayes by Backprop}
+	\addlegendentry{Dropout}
+	\addlegendentry{Vanilla SGD}
+	\end{axis}
+	\end{tikzpicture}
+	\caption{Test errors on FMNIST}
+	\label{fig:fmnist_testerrors}
+\end{figure}

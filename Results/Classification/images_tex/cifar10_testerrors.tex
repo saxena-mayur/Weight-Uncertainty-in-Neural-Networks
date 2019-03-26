@@ -1,0 +1,33 @@
+\begin{figure}
+	\centering			
+	\tikzsetnextfilename{cifar10_testerrors}
+	\begin{tikzpicture}
+	\begin{axis}[
+	ymin=38,
+	ymax=50,
+	xmin=0,
+	xmax=600,
+	xlabel={Epochs}, ylabel={Test error (\%)},
+	width=0.5\textwidth,
+	height=0.24\textheight,
+	% Legend top
+	legend style={at={(0.5,1.1)}, anchor=south,legend columns=-1},
+	legend style={draw=none},	
+	% Legend right
+	%legend style={at={(1.05,0.5)},anchor=west},
+	]
+	\addplot[color=BBB, thick] table[x index={0},y 
+	expr=100*(\thisrowno{3})] {figures/cifar10.csv};
+	\addplot[color=DOT, thick] table[x index={0},y 
+	expr=100*(\thisrowno{1})] {figures/cifar10.csv};
+	%dotted
+	\addplot[color=SGD, thick] table[x index={0},y 
+	expr=100*\thisrowno{2}] {figures/cifar10.csv};
+	\addlegendentry{Bayes by Backprop}
+	\addlegendentry{Dropout}
+	\addlegendentry{Vanilla SGD}
+	\end{axis}
+	\end{tikzpicture}
+	\caption{Test errors on CIFAR-10}
+	\label{fig:cifar10_testerrors}
+\end{figure}
