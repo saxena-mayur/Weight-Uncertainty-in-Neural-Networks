@@ -2,14 +2,20 @@ from BayesBackpropagation import *
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+import sys
 plt.switch_backend('agg')
 
 hasGPU = False
 DEVICE = torch.device("cuda" if hasGPU else "cpu")
 
-HIDDEN = 1200
+if len(sys.argv) < 3:
+    print('Call: python3 WeightPruning.py [hiddenunits] [modelpath]')
+    sys.exit()
 
-# Hyperparameter declaration
+HIDDEN = int(sys.argv[1])
+modelpath = sys.argv[2]
+
+# Initialise a model to load the saved model into
 BATCH_SIZE = 125
 TEST_BATCH_SIZE = 1000
 CLASSES = 10
@@ -34,7 +40,7 @@ model = BayesianNetwork(inputSize=INPUT_SIZE,
                         SIGMA_1=SIGMA_1,
                         SIGMA_2=SIGMA_2).to(DEVICE)
 
-model.load_state_dict(torch.load('./Models/BBB_MNIST_400_5samples.pth', map_location='cpu'))
+model.load_state_dict(torch.load(modelpath, map_location='cpu'))
 model.eval()
 
 def getThreshold(model,buckets):
@@ -93,4 +99,4 @@ for index in range(buckets.size):
         model1.state_dict()['layers.'+str(i)+'.weight_rho'].data.copy_(rho * signalRatio)
         model1.state_dict()['layers.'+str(i)+'.weight_mu'].data.copy_(mu * signalRatio)
 
-    torch.save(model1.state_dict(), './Models/BBB_MNIST_Pruned_'+str(buckets[index])+'.pth')
+    torch.save(model1.state_dict(), './Models/Pruned_'+str(buckets[index])+'.pth')

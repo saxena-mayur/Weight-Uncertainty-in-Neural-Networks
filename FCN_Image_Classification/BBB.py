@@ -17,24 +17,21 @@ torch.manual_seed(0)
 class BBB_Hyper(object):
 
     def __init__(self, ):
-        self.dataset = 'mnist'  # 'mnist' or 'cifar10'
+        self.dataset = 'mnist'  # mnist || cifar10 || fmnist
 
-        # ADAPT THE FOLLOWING TWO PARAMS TO YOUR PROBLEM
-        self.multiplier = 1. #10 ** 4.5
         self.lr = 1e-4
-
         self.momentum = 0.95
-        self.hidden_units = 1200
+        self.hidden_units = 400
+        self.mixture = True
+        self.pi = 0.75
         self.s1 = float(np.exp(-8))
         self.s2 = float(np.exp(-1))
-        self.pi = 0.75
         self.rho_init = -8
-
-        self.mixture = True # better results for False, but more stable for True
+        self.multiplier = 1.
 
         self.max_epoch = 600
         self.n_samples = 1
-        self.n_test_samples = 1
+        self.n_test_samples = 10
         self.batch_size = 125
         self.eval_batch_size = 1000
 
@@ -120,7 +117,7 @@ class BBB(nn.Module):
     def forward(self, data, infer=False):
         output = F.relu(self.layers[0](data.view(-1, self.n_input), infer))
         output = F.relu(self.layers[1](output, infer))
-        output = F.log_softmax(self.layers[2](output, infer), dim=1)
+        output = F.softmax(self.layers[2](output, infer), dim=1)
         return output
 
     def get_lpw_lqw(self):
@@ -132,7 +129,7 @@ class BBB(nn.Module):
 def probs(model, hyper, data, target):
     s_log_pw, s_log_qw, s_log_likelihood = 0., 0., 0.
     for _ in range(hyper.n_samples):
-        output = model(data)
+        output = torch.log(model(data))
 
         sample_log_pw, sample_log_qw = model.get_lpw_lqw()
         sample_log_likelihood = -F.nll_loss(output, target, reduction='sum') * hyper.multiplier
@@ -145,9 +142,6 @@ def probs(model, hyper, data, target):
 
 def ELBO(l_pw, l_qw, l_likelihood, beta):
     kl = beta * (l_qw - l_pw)
-
-    #print(float(kl), float(l_likelihood))
-
     return kl - l_likelihood
 
 
@@ -185,10 +179,9 @@ def evaluate(model, loader, infer=True, samples=1):
         if samples == 1:
             output = model(data, infer=infer)
         else:
-            outputs = torch.zeros(samples, hyper.eval_batch_size, 10).cuda()
-            for i in range(samples):
-                outputs[i] = model(data)
-            output = outputs.mean(0)
+            output = model(data)
+            for i in range(samples - 1):
+                output += model(data)
 
         predict = output.data.max(1)[1]
         acc = predict.eq(target.data).cpu().sum().item()
@@ -197,6 +190,8 @@ def evaluate(model, loader, infer=True, samples=1):
 
 
 def BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput, id=0):
+    print(hyper.__dict__)
+
     """Initialize network"""
     model = BBB(n_input, n_ouput, hyper).cuda()
     optimizer = torch.optim.SGD(model.parameters(), lr=hyper.lr, momentum=hyper.momentum)
@@ -220,7 +215,7 @@ def BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput, id
         train_losses[epoch] = train_loss
 
     """Save"""
-    path = 'Results/BBB2_' + hyper.dataset + '_' + str(hyper.hidden_units) + '_' + str(hyper.lr) + '_samples' + str(hyper.n_samples)+ '_ID' + str(id)
+    path = 'Results/BBB_' + hyper.dataset + '_' + str(hyper.hidden_units) + '_' + str(hyper.lr) + '_samples' + str(hyper.n_samples)+ '_ID' + str(id)
     wr = csv.writer(open(path + '.csv', 'w'), delimiter=',', lineterminator='\n')
     wr.writerow(['epoch', 'valid_acc', 'test_acc', 'train_losses'])
 
@@ -237,6 +232,9 @@ if __name__ == '__main__':
     hyper = BBB_Hyper()
     if len(sys.argv) > 1:
         hyper.hidden_units = int(sys.argv[1])
+
+    if len(sys.argv) > 2:
+        hyper.dataset = sys.argv[2]
 
     """Prepare data"""
     valid_size = 1 / 6
@@ -256,6 +254,25 @@ if __name__ == '__main__':
             root='data',
             train=False,
             download=False,
+            transform=transform)
+
+        n_input = 28 * 28
+        n_ouput = 10
+    elif hyper.dataset == 'fmnist':
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: x * 255. / 126.),  # divide as in paper
+        ])
+
+        train_data = datasets.FashionMNIST(
+            root='data2',
+            train=True,
+            download=True,
+            transform=transform)
+        test_data = datasets.FashionMNIST(
+            root='data2',
+            train=False,
+            download=True,
             transform=transform)
 
         n_input = 28 * 28
@@ -287,7 +304,6 @@ if __name__ == '__main__':
     # obtain training indices that will be used for validation
     num_train = len(train_data)
     indices = list(range(num_train))
-    #np.random.shuffle(indices)
     split = int(valid_size * num_train)
     train_idx, valid_idx = indices[split:], indices[:split]
 
@@ -310,84 +326,39 @@ if __name__ == '__main__':
         batch_size=hyper.eval_batch_size,
         num_workers=1)
 
-    '''from itertools import product
-
-    params = {
-        'pi': [0.25, 0.5, 0.75],
-        'rho': [-8, -7, -6, -5],
-        's1': [0., 1., 2.],
-        's2': [6., 7., 8.],
-    }  # keys must be sorted
-    keys = sorted(params)
-    paramCombinations = list(product(*(params[key] for key in keys)))
-
-    results = []
-    hyper.max_epoch = 1
-    for pi, rho, s1, s2 in tqdm(paramCombinations):
-        print(pi, rho, s1, s2)
-
-        hyper.pi = pi
-        hyper.rho_init = rho
-        hyper.s1 = float(np.exp(-s1))
-        hyper.s2 = float(np.exp(-s2))
-
-        model, valid_acc = BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput)
-
-        results.append((pi, rho, s1, s2, valid_acc))'''
-
-    '''# Error after 1 epoch: pi, rho, s1, s2, validAcc
+    # Results of hyperparameter selection for mixture priors
     top = {
-        400: [(0.5, -8, 0, 8, 3.47),
-                        (0.75, -7, 0, 8, 3.51),
-                        (0.25, -8, 0, 8, 3.56),
-                        (0.75, -6, 2, 8, 3.6),
-                        (0.25, -8, 1, 6, 3.63)], # Best one. Test error (1 sample): 1.75
-        800: [(0.75, -6, 0, 8, 3.24),
-                        (0.5, -6, 2, 8, 3.26),
-                        (0.75, -7, 0, 8, 3.26),
-                        (0.25, -7, 0, 8, 3.34), # Best one. Test error (1 sample): 1.71
-                        (0.75, -8, 0, 8, 3.35)],
-        1200: [(0.75, -7, 1, 8, 3.01),
-                        (0.5, -7, 1, 8, 3.03),
-                        (0.5, -6, 1, 7, 3.13),
-                        (0.75, -8, 1, 8, 3.15),
-                        (0.25, -7, 1, 8, 3.16) # Best one. Test error (10 samples): 1.57
-                        ]
+        400: [
+        		(0.25, -8, 1, 6)
+             ],
+        800: [
+        		(0.25, -7, 0, 8)
+              ],
+        1200: [
+        		(0.25, -7, 1, 8)
+              ]
     }
-
-    id = 0
-    if len(sys.argv) > 1:
-        id = int(sys.argv[1])
-    hyper.max_epoch = 600
-    for hidden in [400,800,1200]:
-        torch.manual_seed(0)
-
-        hyper.hidden_units = hidden
-        pi, rho, s1, s2, acc = top[hidden][id]
-
-        hyper.pi = pi
-        hyper.rho_init = rho
-        hyper.s1 = float(np.exp(-s1))
-        hyper.s2 = float(np.exp(-s2))
-
-        print(hyper.__dict__)
-        model = BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput, id=id)'''
+    # Test params
+    pi, rho, s1, s2 = top[hyper.hidden_units][0]
+    hyper.pi = pi
+    hyper.rho_init = rho
+    hyper.s1 = float(np.exp(-s1))
+    hyper.s2 = float(np.exp(-s2))
+    model = BBB_run(hyper, train_loader, valid_loader, test_loader, n_input, n_ouput)
 
     #exec(open("WeightPruning.py").read())
 
-    hyper.hidden_units = 1200
-
     """Evaluate pruned models"""
-    import os
-    for root, dirs, files in os.walk("Results"):
+    '''import os
+    for root, dirs, files in os.walk("Results/400/"):
         for file in files:
-            if file.startswith('BBB2_mnist_1200_0.0001_samples1_ID4') and file.endswith(".pth"):
+            if file.startswith('BBB2_mnist_400_0.0001_samples1_ID4_Pruned_98') and file.endswith(".pth"):
                 print(file)
                 model1 = BBB(n_input, n_ouput, hyper)
-                model1.load_state_dict(torch.load('Results/' + file))
+                model1.load_state_dict(torch.load('Results/400/' + file))
                 model1.eval()
                 model1.cuda()
                 print('Valid', round(1 - evaluate(model1, valid_loader) / hyper.eval_batch_size, 5) * 100)
                 print('Valid 10', round(1 - evaluate(model1, valid_loader, samples=10) / hyper.eval_batch_size, 5) * 100)
-                print('Test', round(1 - evaluate(model1, test_loader) / hyper.eval_batch_size, 5) * 100)
-                print('Test 10', round(1 - evaluate(model1, test_loader, samples=10) / hyper.eval_batch_size, 5) * 100)
+                #print('Test', round(1 - evaluate(model1, test_loader) / hyper.eval_batch_size, 5) * 100)
+                #print('Test 10', round(1 - evaluate(model1, test_loader, samples=10) / hyper.eval_batch_size, 5) * 100)'''

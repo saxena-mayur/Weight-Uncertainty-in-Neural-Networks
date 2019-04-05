@@ -12,20 +12,18 @@ from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision import datasets
 
+torch.manual_seed(0)
 
 class SGD_Hyper(object):
 
     def __init__(self, ):
-        self.dataset = 'cifar10'  # 'mnist' or 'cifar10'
+        self.dataset = 'cifar10'  # mnist || cifar10 || fmnist
 
         self.mode = 'dropout'  # 'dropout' or 'mlp'
         self.lr = 1e-3
         self.momentum = 0.95
         self.hidden_units = 400
         self.max_epoch = 600
-
-        self.parse_seed = 0
-        self.torch_seed = 0
 
         self.mnist_path = 'data/'
         self.num_valid = 10000
@@ -120,7 +118,7 @@ def evaluate(model, loader):
 
 
 def SGD_run(hyper, train_loader=None, valid_loader=None, test_loader=None):
-    torch.manual_seed(hyper.torch_seed)
+    print(hyper.__dict__)
 
     """Prepare data"""
     if train_loader is None or valid_loader is None or test_loader is None:
@@ -139,6 +137,25 @@ def SGD_run(hyper, train_loader=None, valid_loader=None, test_loader=None):
                 transform=transform)
             test_data = datasets.MNIST(
                 root='data',
+                train=False,
+                download=False,
+                transform=transform)
+
+            hyper.n_input = 28 * 28
+            hyper.n_ouput = 10
+        elif hyper.dataset == 'fmnist':
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Lambda(lambda x: x * 255. / 126.),  # divide as in paper
+            ])
+
+            train_data = datasets.FashionMNIST(
+                root='data2',
+                train=True,
+                download=False,
+                transform=transform)
+            test_data = datasets.FashionMNIST(
+                root='data2',
                 train=False,
                 download=False,
                 transform=transform)
@@ -172,7 +189,6 @@ def SGD_run(hyper, train_loader=None, valid_loader=None, test_loader=None):
         # obtain training indices that will be used for validation
         num_train = len(train_data)
         indices = list(range(num_train))
-        # np.random.shuffle(indices)
         split = int(valid_size * num_train)
         train_idx, valid_idx = indices[split:], indices[:split]
 
@@ -238,16 +254,14 @@ def SGD_run(hyper, train_loader=None, valid_loader=None, test_loader=None):
 
 
 if __name__ == '__main__':
-    """ARGS"""
-    if len(sys.argv) < 4:
-        print('Call: python SGD.py [RATE 1-2] [UNITS] [EPOCHS]')
-        sys.exit()
+    hyper = SGD_Hyper()    
+    if len(sys.argv) > 1:
+        hyper.hidden_units = int(sys.argv[1])
 
-    hyper = SGD_Hyper()
-    hyper.lr = 10 ** (- int(sys.argv[1]))
-    hyper.hidden_units = int(sys.argv[2])  # in paper: 400, 800, 1200
-    hyper.max_epoch = int(sys.argv[3])
-    hyper.mode = sys.argv[4]  # either 'dropout' or 'mlp'
+    if len(sys.argv) > 2:
+        hyper.dataset = sys.argv[2]
 
-    print(hyper.lr, hyper.hidden_units, hyper.max_epoch, hyper.mode)
+    if len(sys.argv) > 3:
+        hyper.mode = sys.argv[3]
+
     SGD_run(hyper)
