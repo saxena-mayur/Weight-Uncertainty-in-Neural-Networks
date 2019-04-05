@@ -20,7 +20,7 @@ def generatePokemonData(NUM_BATCHES):
 
     colourMap = loadPokemonColours()
     data = []
-    with open('pokemon.csv') as csv_file:
+    with open('data/pokemon.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
         for row in csv_reader:
@@ -142,13 +142,12 @@ def test(net, colors_pokemon, pokemonType, TEST_SAMPLES):
 TRAIN_EPOCHS = 500
 TEST_SAMPLES = 10
 NUM_BATCHES = 10
-#https://www.rapidtables.com/web/color/RGB_Color.html#color-table
 newColors = ['Orange','Lime','Maroon','Silver','Navy','Magenta','Aqua','Gold','Chocolate','Olive']
 
 print('Generating Data set.')
 train_x,train_y,pokemonType, pokemonColors = generatePokemonData(NUM_BATCHES)
 
-with open('PokemonTypeMap.json', 'w') as fp:
+with open('data/PokemonTypeMap.json', 'w') as fp:
         json.dump(pokemonType, fp, indent=4, sort_keys=True)
 
 net = trainBBB(train_x,train_y,TRAIN_EPOCHS,NUM_BATCHES)

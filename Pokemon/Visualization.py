@@ -112,20 +112,20 @@ def generateGraph(H,s,v):
     #Type classification graph
     patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['Type'],rotatelabels=True)
     plt.axis('equal')
-    plt.savefig('./Results/Type_S='+str(s)+'_V='+str(v)+'.png',transparent=True)
+    plt.savefig('../Results/Pokemon/Type_S='+str(s)+'_V='+str(v)+'.png',transparent=True)
     plt.clf()
     
     #Top two types
     patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['TopTwo'],rotatelabels=True)
     plt.axis('equal')
-    plt.savefig('./Results/Top2Types_S='+str(s)+'_V='+str(v)+'.png',transparent=True)
+    plt.savefig('../Results/Pokemon/Top2Types_S='+str(s)+'_V='+str(v)+'.png',transparent=True)
     plt.clf()
 
     #Standard deviation fluctuation graph
     #plt.figure(2)
     patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['Std'],rotatelabels=True)
     plt.axis('equal')
-    plt.savefig('./Results/Standard deviation_S='+str(s)+'_V='+str(v)+'.png',transparent=True)
+    plt.savefig('../Results/Pokemon/Standard deviation_S='+str(s)+'_V='+str(v)+'.png',transparent=True)
     plt.clf()
     
 

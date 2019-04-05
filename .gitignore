@@ -5,3 +5,4 @@ __pycache__/
 data/mnist/
 .idea/
 .DS_Store
+Dump/
