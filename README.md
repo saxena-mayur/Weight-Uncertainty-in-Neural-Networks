@@ -1,4 +1,4 @@
-# "Weight Uncertainty in Neural Networks"
+# Reproduction - Weight Uncertainty in Neural Networks
 
 This project aims to reproduce the results of  Blundell et al. in their paper "Weight Uncertainty in Neural Networks" from 2015.
 This paper presents Bayesian neural networks that only require a minor modification to the backpropagation algorithm, which they call "Bayes by Backprop" (BBB).
