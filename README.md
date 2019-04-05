@@ -5,8 +5,7 @@ This paper presents Bayesian neural networks that only require a minor modificat
 We also perform a number of extensions further to the original publication.
 
 ## Experiments
-You find the performed experiments in individual folders, alongside our results in the directory `Results/`.
-
+You find the performed experiments in individual folders, each containing code and results.
 We performed the following experiments:
 - _Image classification_ through fully-connected networks (FCN) in `FCN_Image_Classification/`,
 - _Regression_ on a toy example in `Regression/`,
