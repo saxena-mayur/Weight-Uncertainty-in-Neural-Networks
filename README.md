@@ -10,7 +10,7 @@ You find the performed experiments in individual folders, alongside our results 
 We performed the following experiments:
 - _Image classification_ through fully-connected networks (FCN) in `FCN_Image_Classification/`,
 - _Regression_ on a toy example in `Regression/`,
-- Reinforcement learning in _contextual bandits_ in `Contextual Bandit`,
+- Reinforcement learning in _contextual bandits_ in `Contextual Bandit/`,
 - (Extension) _Pokémon_ type classification from colour in `Pokemon/`,
 - (Extension) A _PyTorch BBB framework_ to apply BBB to any network architecture, studied for CNNs and DensetNets, in `BayesCNN/`.
 
