@@ -27,6 +27,21 @@ A2: lr=2e-5, (but sum of square distance ->*64)
 to make Bayes converge, it is also possible to decrease the weight of kl.
 maybe use exponential reweighting ? that is strange.
 
+A3: it is good ! BBB is doing better than greedy ! we will try with different learning rate and start with empty or non empty buffer.
+
+results: use empty buffer to start with and use lr = 1e-5 for best overall performance, 1e-4 to show biggest difference between bbb and greedy.
+
+this run is not very good. performance is not good compared to previous experiment.
+
+A3b : try with lr 1e-4
+A3c : buffer is not completed : just do steps on available mushs.
+
+
+A4: all experiments with all greedy agents.
+
+Comments:
+- very sensitive to initialization. If we initialize 
+
 
 
 

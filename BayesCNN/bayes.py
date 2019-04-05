@@ -15,33 +15,35 @@ from utils import Flatten, ScaleMixtureGaussian, Var, DEVICE, PI, SIGMA_1, SIGMA
 
 class BayesWrapper:
     def __init__(self, name, net, prior_nll, 
-                 mu_init=.05, rho_init=-5,
-                 type='classification', lr = 2e-5):
+                 rho_init=-5,
+                 mode='classification', lr = 1e-3):
         super().__init__()
         self.name = name # network name
         self.net = net
         self.bayes_params = [(name,
-                              torch.randn_like(p)*mu_init, #mu
-                              torch.randn_like(p)*.05+rho_init,#rho,
+                              p.clone().detach(), #mu
+                              torch.zeros_like(p)+rho_init,#rho,
                               torch.zeros_like(p),#sigma
                               torch.zeros_like(p)) #epsilon (buffer)
-                             for name,p in self.net.state_dict().items()]
+                             for name,p in self.net.named_parameters()
+                            ]
         for (name, *tensors) in self.bayes_params:
             for t in tensors:
                 t.to(DEVICE)
         self.kl, self.pnll, self.vp = 0, 0, 0
         self.prior_nll = prior_nll
-        if type == 'regression':
+        if mode == 'regression':
             self.criterion = lambda x, y:.5*((x-y)**2).sum()
-        elif type == 'classification':
+        elif mode == 'classification':
             self.criterion = nn.CrossEntropyLoss()
         params = [mu for name, mu, rho, _, eps in self.bayes_params]+ [rho for name, mu, rho, _, eps in self.bayes_params]
-        self.optimizer = optim.SGD(params, lr=lr)
+        #self.optimizer = optim.SGD(params, lr=lr)
+        self.optimizer = optim.Adam(params, lr=lr)
     
     def forward(self, input):     
         for name, mu, rho, sigma, eps in self.bayes_params:
             eps.normal_()
-            sigma.copy_(torch.log(1+torch.exp(rho)))
+            sigma.copy_(torch.log1p(torch.exp(rho)))
             w = mu + eps*sigma
             self.pnll += self.prior_nll(w)
             self.vp += (-torch.log(np.sqrt(2*np.pi)*sigma) - eps**2/2).sum()
