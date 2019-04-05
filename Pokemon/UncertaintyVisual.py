@@ -49,7 +49,14 @@ def loadPokemonModel(filename):
 def loadPokemonColours():
     with open('median_values.json') as f:
         data = json.load(f)
-    return data
+    
+    cols = []
+    for key in data:
+        temp  = data[key]
+        r = [temp['R']/255,temp['G']/255,temp['B']/255]
+        cols.append(r)
+    cols = np.array(cols)
+    return cols
 
 def loadPokemonTypeMap():
     with open('PokemonTypeMap.json') as f:
@@ -67,7 +74,7 @@ def test(net, r,g,b, pokemonType, TEST_SAMPLES):
         result.append(np.exp(a) / (np.exp(a)).sum())
         
     mean = np.mean(result, axis = 0)
-    std = np.std(result, axis = 0)
+    std = np.mean(np.std(result, axis = 0))
     result = pd.DataFrame({'Mean.Probability': mean,'Std':std})
     result['Type'] = result.index.values.astype(np.int)
     result = result.replace({'Type': pokemonType})
@@ -79,56 +86,60 @@ def test(net, r,g,b, pokemonType, TEST_SAMPLES):
     result['Type'] = result['Type']+"("+ str("{0:.2f}".format(result['Mean.Probability']))+")"
     return result
     
-net = loadPokemonModel('./Model.pth')
-pokemonType = loadPokemonTypeMap()
+def closest_node_distance(node, nodes):
+    nodes = np.asarray(nodes)
+    dist_2 = np.sqrt(np.sum((nodes - node)**2, axis=1))
+    return np.min(dist_2)
 
-#Initialize the HSV values
-H = np.arange(0, 1.01, 0.01)
-S = [1]
-V = np.arange(0, 1.01, 0.25)
-
-def generateGraph(H,s,v):
-    labels = [] #To store Pokemon's type
+def generateGraph(H,s,v,colours):
+    distance = []
     col = [] #To store Pokemon's colour in RGB
     variance = [] #To store standard deviation for a colour
-    top2 = []
-    TEST_SAMPLES= 10
+    TEST_SAMPLES= 2
 
     for h in H:
         r,g,b= colorsys.hsv_to_rgb(h, s, v) #convert hsv to rgb
         col.append((r,g,b))
         temp = test(net,r,g,b,pokemonType,TEST_SAMPLES)
-        labels.append(temp['Type'])
-        top2.append(temp['TopTwo'])
+        distance.append(closest_node_distance([r,g,b],colours))
         variance.append("{0:.4f}".format(temp['Std']))
-    sizes = np.ones(len(labels)) #Set equal weights to every color in pie chat
-    r = pd.DataFrame({'Type':labels,'Weight':sizes,'Colour':col,'Hue':H,'Std':variance,'TopTwo':top2})
+    
+    r = pd.DataFrame({'Distance':distance,'Colour':col,'Hue':H,'Std':variance})
     r = r.sort_values(by=['Hue'], ascending=False) #To form the spectrum
     r = r.drop(['Hue'],axis=1)
     r = r.drop_duplicates()
+    return r
 
-    plt.figure(figsize=(9,8))
+net = loadPokemonModel('./Model.pth')
+pokemonType = loadPokemonTypeMap()
 
-    #Type classification graph
-    patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['Type'],rotatelabels=True)
-    plt.axis('equal')
-    plt.savefig('../Results/Type_S='+str(s)+'_V='+str(v)+'.png',transparent=True)
-    plt.clf()
-    
-    #Top two types
-    patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['TopTwo'],rotatelabels=True)
-    plt.axis('equal')
-    plt.savefig('../Results/Top2Types_S='+str(s)+'_V='+str(v)+'.png',transparent=True)
-    plt.clf()
+data  = loadPokemonColours()
 
-    #Standard deviation fluctuation graph
-    #plt.figure(2)
-    patches, texts = plt.pie(r['Weight'], colors=r['Colour'], startangle=90,labels=r['Std'],rotatelabels=True)
-    plt.axis('equal')
-    plt.savefig('../Results/Standard deviation_S='+str(s)+'_V='+str(v)+'.png',transparent=True)
-    plt.clf()
-    
+#Initialize the HSV values
+H = np.arange(0, 1.01, 0.01)
+S = np.arange(0, 1.01, 0.25)
+V = np.arange(0, 1.01, 0.25)
+
+r = pd.DataFrame()
 
 for s in S:
     for v in V:
-        generateGraph(H,s,v)
+        if r.empty:
+            r = generateGraph(H,s,v,data)
+        else:
+            r = r.append(generateGraph(H,s,v,data))
+
+r = r.sort_values(by=['Distance'], ascending=False) 
+
+
+print('Displaying graph')
+
+y = pd.to_numeric(r.Std).values
+x = pd.to_numeric(r.Distance).values
+c = r.Colour.values 
+
+plt.xlabel('Distance from the nearest Training data point')
+plt.ylabel('Standard deviation in prediction')
+plt.plot(x,y)
+plt.savefig('./Results/Uncertainty.png')
+plt.clf()

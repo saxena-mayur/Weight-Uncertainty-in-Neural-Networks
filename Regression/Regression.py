@@ -91,8 +91,8 @@ def BBB_Regression(x,y,x_test,y_test):
     plt.plot(x_test, y_test, c='grey', label='truth')
     plt.legend()
     plt.tight_layout()
-    plt.savefig('../Results/Regression/Regression_BBB.png')
-    plt.savefig('../Results/Regression/Regression_BBB.eps', format='eps', dpi=1000)
+    plt.savefig('../Results/Regression_BBB.png')
+    plt.savefig('../Results/Regression_BBB.eps', format='eps', dpi=1000)
     plt.clf()
 
     #Save the trained model
@@ -149,8 +149,8 @@ def NN_Regression(x,y,x_test,y_test):
     plt.plot(x_test, y_test, c='grey', label='truth')
     plt.legend()
     plt.tight_layout()
-    plt.savefig('../Results/Regression/Regression_NN.png')
-    plt.savefig('../Results/Regression/Regression_NN.eps', format='eps', dpi=1000)
+    plt.savefig('../Results/Regression_NN.png')
+    plt.savefig('../Results/Regression_NN.eps', format='eps', dpi=1000)
     plt.clf()
 
 BBB_Regression(x,y,x_test,y_test)
