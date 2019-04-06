@@ -37,8 +37,12 @@ The models can then be further tested for their classification errors.
 For the case of BBB, you can just uncomment the last few lines of `BBB.py` script.
 
 ### Regression
+
 ### Contextual Bandits
+The experiment is executed in a Jupyter Notebook file, `bandit_gui.ipynb`, which executes a run of 50,000 steps for the agents and stores the obtained cumulative regrets in a .csv file in the `Results/` directory.
+
 ### Pokémon Type Classification
+
 ### BBB framework
 
 ## References
