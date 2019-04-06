@@ -37,13 +37,15 @@ The models can then be further tested for their classification errors.
 For the case of BBB, you can just uncomment the last few lines of `BBB.py` script.
 
 ### Regression
+The script `Regression.py` inside the `Regression/` directory, executes both bayesian and standard learning on the specified non-linear curve. Its results are stored in `Results/` directory while the generated model is stored as `Regression.pth`.
 
 ### Contextual Bandits
 The experiment is executed in a Jupyter Notebook file, `bandit_gui.ipynb`, which executes a run of 50,000 steps for the agents and stores the obtained cumulative regrets in a .csv file in the `Results/` directory.
 
 ### Pokémon Type Classification
+Inside the `Pokemon/` directory, the script `Pokemon.py` serves two tasks: generation of the training samples by amalgamating the different sources and using this data to train the model. `Visualization.py` helps to visualize the prediction across the colour pallete while `UncertaintyVisual.py` helps to capture model uncertainity.
 
-### BBB framework
+### BayesCNN
 
 ## References
 - C. Blundell, J. Cornebise, K. Kavukcuoglu and D. Wierstra, [‘Weight uncertainty in
