@@ -46,6 +46,7 @@ The experiment is executed in a Jupyter Notebook file, `bandit_gui.ipynb`, which
 Inside the `Pokemon/` directory, the script `Pokemon.py` serves two tasks: generation of the training samples by amalgamating the different sources and using this data to train the model. `Visualization.py` helps to visualize the prediction across the colour pallete while `UncertaintyVisual.py` helps to capture model uncertainity.
 
 ### BayesCNN
+In the BayesCNN directory, the bayes.py file is a generic BBB wrapper that can transform any network architecture into a bayesian network. The notebook CIFAR10.ipynb gives a workflow for building a frequentist/bayesian network, train it on CIFAR10 and record evolution of validation accuracies.
 
 ## References
 - C. Blundell, J. Cornebise, K. Kavukcuoglu and D. Wierstra, [‘Weight uncertainty in
